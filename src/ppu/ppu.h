@@ -34,6 +34,7 @@ private:
     int scanlineCounter;
 
     // Frame buffer to store the final rendered image
+    uint8_t frameBuffer[160 * 144 * 3];
 
     // Private methods for internal PPU operations
     void renderScanline();

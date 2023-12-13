@@ -13,6 +13,8 @@ public:
     void reset();
 
 private:
+    // Memory map
+    //uint8_t memory[0xFFFF];
 };
 
 #endif // MEMORY_H
