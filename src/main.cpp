@@ -2,6 +2,13 @@
 #include "cpu/cpu.h"
 #include "memory/memory.h"
 #include "ppu/ppu.h"
+#include "SD.h"
+
+#define SDCARD_CS 1
+#define SDCARD_MOSI 2
+#define SDCARD_SCLK 4
+#define SDCARD_MISO 6
+SPIClass SDSPI(FSPI);
 
 TFT_eSPI tft = TFT_eSPI();
 CPU cpu;
@@ -12,13 +19,29 @@ void setup() {
   Serial.begin(115200);
   tft.init();
 
+  // initialize SD card
+  pinMode(SDCARD_MISO, INPUT_PULLUP);
+  SDSPI.begin(SDCARD_SCLK, SDCARD_MISO, SDCARD_MOSI, SDCARD_CS);
+  if (!SD.begin(SDCARD_CS, SDSPI)) {
+    Serial.println("setup SD card FAILED");
+  }
+  Serial.println("setup SD card OK");
+
   // Initialize the emulator components
 
   // Reset the emulator
   cpu.reset();
   memory.reset();
+  Serial.println("setup OK");
 
-  // Initialize buttons here
+  // Read ROM file
+  File romFile = SD.open("/roms/04-op r,imm.gb", FILE_READ);
+  
+  // Read ROM file into memory
+  memory.loadRom(romFile);
+
+  romFile.close();
+  Serial.println("ROM file read OK");
 }
 
 void renderGameBoyScreen() {
