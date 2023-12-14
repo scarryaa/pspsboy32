@@ -6,7 +6,7 @@
 
 class CPU {
 public:
-    CPU();
+    CPU(Memory& memory);
     ~CPU();
 
     void reset();
@@ -391,7 +391,7 @@ private:
     uint16_t PC;
 
     // Memory management component
-    Memory memory;
+    Memory& memory;
 
     // CPU Flags
     bool f_Z;
@@ -403,6 +403,7 @@ private:
     void executeInstruction(uint8_t opcode);
     void add(uint8_t value);
     void sub(uint8_t value);
+    void printStatus();
 };
 
 #endif // CPU_H

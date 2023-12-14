@@ -11,9 +11,9 @@
 SPIClass SDSPI(FSPI);
 
 TFT_eSPI tft = TFT_eSPI();
-CPU cpu;
 Memory memory;
 PPU ppu;
+CPU cpu(memory);
 
 void setup() {
   Serial.begin(115200);
@@ -22,26 +22,23 @@ void setup() {
   // initialize SD card
   pinMode(SDCARD_MISO, INPUT_PULLUP);
   SDSPI.begin(SDCARD_SCLK, SDCARD_MISO, SDCARD_MOSI, SDCARD_CS);
-  if (!SD.begin(SDCARD_CS, SDSPI)) {
+  if (!SD.begin(SDCARD_CS, SDSPI, 4000000, "", 20)) {
     Serial.println("setup SD card FAILED");
   }
   Serial.println("setup SD card OK");
 
   // Initialize the emulator components
-
-  // Reset the emulator
-  cpu.reset();
-  memory.reset();
   Serial.println("setup OK");
 
   // Read ROM file
-  File romFile = SD.open("/roms/04-op r,imm.gb", FILE_READ);
+  Serial.println("Reading ROM file...");
+  Serial.println(SD.exists("roms") ? "roms folder exists" : "roms folder does not exist");
   
   // Read ROM file into memory
-  memory.loadRom(romFile);
-
-  romFile.close();
-  Serial.println("ROM file read OK");
+  memory.loadRom();
+  
+  // Reset the emulator
+  cpu.reset();
 }
 
 void renderGameBoyScreen() {

@@ -4,10 +4,35 @@ Memory::Memory() {
 
 }
 
-void Memory::loadRom(File romFile) {
-    // Read ROM file into memory
-    romFile.read(romBank, 0x4000);
+void Memory::loadRom() {
+    if (!SD.exists("/roms/04-op r,imm.gb")) {
+        Serial.println("ROM file does not exist");
+        return;
+    }
+
+    File romFile = SD.open("/roms/03-op sp,hl.gb");
+    if (!romFile) {
+        Serial.println("Error opening ROM file");
+        return;
+    }
+
+    size_t bytesRead = romFile.readBytes((char*)romBank, sizeof(romBank));
+
+    Serial.print(bytesRead);
+    Serial.println(" bytes read into ROM bank");
+
+    Serial.print("ROM bank contents: ");
+    for (int i = 0; i < sizeof(romBank); i++) {
+        Serial.print(readByte(i), HEX);
+        Serial.print(" ");
+    }
+    Serial.println();
+
+    Serial.println("ROM file read OK");
+    romFile.close();
 }
+
+
 
 Memory::~Memory() {
 }
@@ -15,6 +40,10 @@ Memory::~Memory() {
 uint8_t Memory::readByte(uint16_t address) {
     if (address < 0x4000) {
         // Read from fixed ROM bank
+        // Serial.print("Reading address ");
+        // Serial.print(address, HEX);
+        // Serial.print(" from fixed ROM bank: ");
+        // Serial.println(romBank[address], HEX);
         return romBank[address];
     } else if (address >= 0x8000 && address < 0xA000) {
         // Read from VRAM
@@ -54,5 +83,13 @@ void Memory::writeByte(uint16_t address, uint8_t value) {
 }
 
 void Memory::reset() {
-    // Reset memory state
+    // Reset ROM bank
+    for (int i = 0; i < sizeof(romBank); i++) {
+        romBank[i] = 0;
+    }
+
+    // Reset I/O registers
+    for (int i = 0; i < sizeof(ioRegisters); i++) {
+        ioRegisters[i] = 0;
+    }
 }

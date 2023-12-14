@@ -12,7 +12,7 @@ bool CPU::stopped = false;
 bool CPU::halted = false;
 bool CPU::IME = false;
 
-CPU::CPU() {
+CPU::CPU(Memory& memory) : memory(memory) {
     instructionTable[0x00] = &CPU::NoOperation;
     instructionTable[0x10] = &CPU::Stop;
     instructionTable[0x20] = &CPU::JR_NZ_i8;
@@ -304,6 +304,8 @@ void CPU::reset() {
 uint8_t CPU::fetchInstruction() {
     // Fetch the next instruction from memory
     uint8_t opcode = memory.readByte(PC);
+    // Serial.print("Fetched instruction: ");
+    // Serial.println(opcode, HEX);
 
     return opcode;
 }
@@ -346,13 +348,33 @@ bool CPU::checkFlag() {
     return false;
 }
 
+void CPU::printStatus() {
+    char buffer[200];
+
+    uint8_t mem0 = readMemory(PC);
+    uint8_t mem1 = readMemory(PC + 1);
+    uint8_t mem2 = readMemory(PC + 2);
+    uint8_t mem3 = readMemory(PC + 3);
+
+    // Format the string with the register values and memory contents in hexadecimal format
+    snprintf(buffer, sizeof(buffer),
+             "A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X",
+             A, F, B, C, D, E, H, L, SP, PC, mem0, mem1, mem2, mem3);
+
+    // Print the formatted string to the serial monitor
+    Serial.println(buffer);
+}
+
 void CPU::executeInstruction(uint8_t opcode) {
-    Serial.print("Executing instruction: ");
-    Serial.println(opcode, HEX);
+    // if (opcode != 0) {
+    //     Serial.print("Executing instruction: ");
+    //     Serial.println(opcode, HEX);
+    // }
+
+    printStatus();
 
     InstructionFunc func = instructionTable[opcode];
-    uint8_t increment = (this->*func)();
-    PC += increment;
+    uint8_t cycles = (this->*func)();
 }
 
 void CPU::add(uint8_t value) {
