@@ -5,7 +5,8 @@
 #include <FS.h>
 #include <SD.h>
 
-class Memory {
+class Memory
+{
 public:
     Memory();
     ~Memory();
@@ -14,12 +15,16 @@ public:
     void writeByte(uint16_t address, uint8_t value);
     void reset();
     void loadRom();
-    
+
 private:
-    uint8_t romBank[0x4000]; // Fixed ROM bank (16KB)
-    uint8_t ioRegisters[128]; // I/O registers (128B)
-    uint8_t highRam[127];    // High RAM (127B)
-    uint8_t oam[160];        // OAM (160B)
+    uint8_t romBank[0x4000];           // Fixed ROM bank (16KB)
+    uint8_t switchableRomBank[0x4000]; // Switchable ROM bank (16KB)
+    uint8_t *cartridgeRam;             // Cartridge RAM (8KB)
+    uint8_t *ioRegisters;              // I/O registers (128B)
+    uint8_t *highRam;                  // High RAM (127B)
+    uint8_t *oam;                      // OAM (160B)
+    uint8_t *wram;                     // Working RAM (8KB)
+    uint8_t *vram;                     // Video RAM (8KB)
 };
 
 #endif // MEMORY_H

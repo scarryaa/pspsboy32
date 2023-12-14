@@ -1,49 +1,61 @@
 #include "ppu.h"
 
-PPU::PPU() {
+PPU::PPU()
+{
     // Constructor implementation
 }
 
-PPU::~PPU() {
+PPU::~PPU()
+{
     // Destructor implementation
 }
 
-void PPU::reset() {
+void PPU::reset()
+{
     // Reset implementation
 }
 
-void PPU::update(int cycles) {
+void PPU::update(int cycles)
+{
     // Update implementation
 }
 
-void PPU::handleHBlank() {
+void PPU::handleHBlank()
+{
     // handleHBlank implementation
 }
 
-void PPU::handleVBlank() {
+void PPU::handleVBlank()
+{
     // handleVBlank implementation
 }
 
-void PPU::handleOAMSearch() {
+void PPU::handleOAMSearch()
+{
     // handleOAMSearch implementation
 }
 
-void PPU::handlePixelTransfer() {
+void PPU::handlePixelTransfer()
+{
     // handlePixelTransfer implementation
 }
 
-void PPU::renderFrame() {
+void PPU::renderFrame()
+{
     // renderFrame implementation
 }
 
-void PPU::renderScanline() {
+void PPU::renderScanline()
+{
     // renderScanline implementation
 }
 
-void PPU::renderTiles() {
+void PPU::renderTiles()
+{
     // renderTiles implementation
 }
 
-void PPU::renderSprites() {
+void PPU::renderSprites()
+{
     // renderSprites implementation
 }

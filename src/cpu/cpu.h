@@ -1,12 +1,33 @@
+#define FLAG_Z_BIT 7
+#define FLAG_N_BIT 6
+#define FLAG_H_BIT 5
+#define FLAG_C_BIT 4
+
+#define SET_FLAG_Z(F, val) ((val) ? ((F) |= (1 << FLAG_Z_BIT)) : ((F) &= ~(1 << FLAG_Z_BIT)))
+#define SET_FLAG_N(F, val) ((val) ? ((F) |= (1 << FLAG_N_BIT)) : ((F) &= ~(1 << FLAG_N_BIT)))
+#define SET_FLAG_H(F, val) ((val) ? ((F) |= (1 << FLAG_H_BIT)) : ((F) &= ~(1 << FLAG_H_BIT)))
+#define SET_FLAG_C(F, val) ((val) ? ((F) |= (1 << FLAG_C_BIT)) : ((F) &= ~(1 << FLAG_C_BIT)))
+
+#define CLEAR_FLAG_Z(F) ((F) &= ~(1 << FLAG_Z_BIT))
+#define CLEAR_FLAG_N(F) ((F) &= ~(1 << FLAG_N_BIT))
+#define CLEAR_FLAG_H(F) ((F) &= ~(1 << FLAG_H_BIT))
+#define CLEAR_FLAG_C(F) ((F) &= ~(1 << FLAG_C_BIT))
+
+#define GET_FLAG_Z(F) (((F) >> FLAG_Z_BIT) & 1)
+#define GET_FLAG_N(F) (((F) >> FLAG_N_BIT) & 1)
+#define GET_FLAG_H(F) (((F) >> FLAG_H_BIT) & 1)
+#define GET_FLAG_C(F) (((F) >> FLAG_C_BIT) & 1)
+
 #ifndef CPU_H
 #define CPU_H
 
 #include <cstdint>
 #include "../memory/memory.h"
 
-class CPU {
+class CPU
+{
 public:
-    CPU(Memory& memory);
+    CPU(Memory &memory);
     ~CPU();
 
     void reset();
@@ -174,7 +195,7 @@ public:
     uint8_t LD_A_L();
     uint8_t LD_A_mem_HL();
     uint8_t LD_A_A();
-    
+
     uint8_t ADD_A_B();
     uint8_t ADD_A_C();
     uint8_t ADD_A_D();
@@ -382,7 +403,6 @@ public:
     // helper function for 0xCC, 0xDC
     uint8_t CALL_cc_nn(uint8_t flag);
 
-
 private:
     // CPU registers
     uint8_t A, F;
@@ -391,13 +411,7 @@ private:
     uint16_t PC;
 
     // Memory management component
-    Memory& memory;
-
-    // CPU Flags
-    bool f_Z;
-    bool f_N;
-    bool f_H;
-    bool f_C;
+    Memory &memory;
 
     // Private methods for CPU functionality
     void executeInstruction(uint8_t opcode);
