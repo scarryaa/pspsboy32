@@ -18,7 +18,7 @@ void Memory::loadRom()
         return;
     }
 
-    File romFile = SD.open("/roms/05-op rp.gb");
+    File romFile = SD.open("/roms/07-jr,jp,call,ret,rst.gb");
     if (!romFile)
     {
         Serial.println("Error opening ROM file");

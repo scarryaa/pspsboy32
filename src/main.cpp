@@ -3,6 +3,8 @@
 #include "memory/memory.h"
 #include "ppu/ppu.h"
 #include "SD.h"
+#include "SPI.h"
+#include "esp32-hal-gpio.h"
 
 #define SDCARD_CS 1
 #define SDCARD_MOSI 2
@@ -71,4 +73,16 @@ void loop()
 void processAudio()
 {
   // Audio processing
+}
+
+// for native build
+int main()
+{
+  setup();
+  while (true)
+  {
+    loop();
+    processAudio();
+  }
+  return 0;
 }

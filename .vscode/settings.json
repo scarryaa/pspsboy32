@@ -13,6 +13,8 @@
         "new": "cpp",
         "sstream": "cpp",
         "utility": "cpp",
-        "map": "cpp"
+        "map": "cpp",
+        "iostream": "cpp",
+        "string": "cpp"
     }
 }
