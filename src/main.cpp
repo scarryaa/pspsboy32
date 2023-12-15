@@ -1,7 +1,5 @@
+#ifdef PLATFORM_ESP32
 #include <TFT_eSPI.h>
-#include "cpu/cpu.h"
-#include "memory/memory.h"
-#include "ppu/ppu.h"
 #include "SD.h"
 #include "SPI.h"
 #include "esp32-hal-gpio.h"
@@ -13,12 +11,21 @@
 SPIClass SDSPI(FSPI);
 
 TFT_eSPI tft = TFT_eSPI();
-Memory memory;
-PPU ppu;
-CPU cpu(memory);
+#endif
+
+#include "core/core.h"
+#include "./file-reader/file-reader.h"
+#include <memory>
+
+Core core;
+std::unique_ptr<FileReader> fileReader;
+
+#ifdef PLATFORM_ESP32
+#include "file-reader/esp-file-reader.h"
 
 void setup()
 {
+  fileReader = std::unique_ptr<ESPFileReader>(new ESPFileReader());
   Serial.begin(115200);
   tft.init();
 
@@ -38,11 +45,20 @@ void setup()
   Serial.println("Reading ROM file...");
   Serial.println(SD.exists("roms") ? "roms folder exists" : "roms folder does not exist");
 
-  // Read ROM file into memory
-  memory.loadRom();
-
   // Reset the emulator
-  cpu.reset();
+  core.reset();
+
+  // Read ROM file into memory
+  if (fileReader->open("./roms/07-jr,jp,call,ret,rst.gb"))
+  {
+    char buffer[1024];
+    Serial.println("Reading ROM file...");
+    size_t bytesRead = fileReader->read(buffer, sizeof(buffer));
+
+    core.loadRom(buffer);
+
+    fileReader->close();
+  }
 }
 
 void renderGameBoyScreen()
@@ -58,10 +74,8 @@ void processInput()
 
 void loop()
 {
-  // Execute a single CPU cycle
-  cpu.executeCycle();
-
-  // Update memory and PPU
+  // Execute a single cycle
+  core.update();
 
   // Render Game Boy screen to the TFT display
   renderGameBoyScreen();
@@ -74,15 +88,40 @@ void processAudio()
 {
   // Audio processing
 }
+#endif
 
-// for native build
+#ifdef PLATFORM_NATIVE
+#include "file-reader/desktop-file-reader.h"
+#include <iostream>
+
 int main()
 {
-  setup();
+  fileReader = std::unique_ptr<DesktopFileReader>(new DesktopFileReader());
+
+  // Initialize the emulator components
+  core.init();
+
+  // Reset the emulator
+  core.reset();
+
+  std::cout << "Reading ROM file..." << std::endl;
+
+  // Read ROM file into memory
+  if (fileReader->open("../roms/07-jr,jp,call,ret,rst.gb"))
+  {
+    char buffer[1024];
+    size_t bytesRead = fileReader->read(buffer, sizeof(buffer));
+
+    std::cout << "bytesRead: " << bytesRead << std::endl;
+    core.loadRom(buffer);
+
+    fileReader->close();
+  }
+
   while (true)
   {
-    loop();
-    processAudio();
+    core.update();
   }
   return 0;
 }
+#endif

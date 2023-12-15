@@ -40,11 +40,6 @@ void PPU::handlePixelTransfer()
     // handlePixelTransfer implementation
 }
 
-void PPU::renderFrame()
-{
-    // renderFrame implementation
-}
-
 void PPU::renderScanline()
 {
     // renderScanline implementation

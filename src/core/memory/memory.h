@@ -2,8 +2,6 @@
 #define MEMORY_H
 
 #include <cstdint>
-#include <FS.h>
-#include <SD.h>
 
 class Memory
 {
@@ -14,7 +12,7 @@ public:
     uint8_t readByte(uint16_t address);
     void writeByte(uint16_t address, uint8_t value);
     void reset();
-    void loadRom();
+    void loadRom(char *data);
 
 private:
     uint8_t romBank[0x4000];           // Fixed ROM bank (16KB)

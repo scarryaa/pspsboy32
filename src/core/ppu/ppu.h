@@ -18,9 +18,6 @@ public:
     void handleOAMSearch();
     void handlePixelTransfer();
 
-    // Render a single frame to an output buffer
-    void renderFrame();
-
 private:
     // PPU registers and flags
     uint8_t LCDC;       // LCD Control Register

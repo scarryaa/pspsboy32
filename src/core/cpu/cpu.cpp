@@ -1,5 +1,4 @@
 #include "cpu.h"
-#include <USBCDC.h>
 
 typedef uint8_t (CPU::*InstructionFunc)();
 InstructionFunc instructionTable[256];
@@ -354,31 +353,31 @@ bool CPU::checkFlag()
     return false;
 }
 
-void CPU::printStatus()
-{
-    char buffer[200];
+// void CPU::printStatus()
+// {
+//     char buffer[200];
 
-    uint8_t mem0 = memory.readByte(PC);
-    uint8_t mem1 = memory.readByte(PC + 1);
-    uint8_t mem2 = memory.readByte(PC + 2);
-    uint8_t mem3 = memory.readByte(PC + 3);
+//     uint8_t mem0 = memory.readByte(PC);
+//     uint8_t mem1 = memory.readByte(PC + 1);
+//     uint8_t mem2 = memory.readByte(PC + 2);
+//     uint8_t mem3 = memory.readByte(PC + 3);
 
-    // Format the string with the register values and memory contents in hexadecimal format
-    snprintf(buffer, sizeof(buffer),
-             "A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X",
-             A, F, B, C, D, E, H, L, SP, PC, mem0, mem1, mem2, mem3);
+//     // Format the string with the register values and memory contents in hexadecimal format
+//     snprintf(buffer, sizeof(buffer),
+//              "A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X",
+//              A, F, B, C, D, E, H, L, SP, PC, mem0, mem1, mem2, mem3);
 
-    File file = SD.open("/status.txt", FILE_APPEND);
-    if (file)
-    {
-        file.println(buffer);
-        file.close();
-    }
-    else
-    {
-        Serial.println("Error opening status.txt");
-    }
-}
+//     File file = SD.open("/status.txt", FILE_APPEND);
+//     if (file)
+//     {
+//         file.println(buffer);
+//         file.close();
+//     }
+//     else
+//     {
+//         Serial.println("Error opening status.txt");
+//     }
+// }
 
 void CPU::executeInstruction(uint8_t opcode)
 {
@@ -387,7 +386,7 @@ void CPU::executeInstruction(uint8_t opcode)
     //     Serial.println(opcode, HEX);
     // }
 
-    printStatus();
+    // printStatus();
 
     InstructionFunc func = instructionTable[opcode];
     uint8_t cycles = (this->*func)();

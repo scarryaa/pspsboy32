@@ -1,10 +1,9 @@
 #include "../cpu.h"
-#include <HardwareSerial.h>
 
 // INVALID
 uint8_t CPU::INVALID()
 {
-    Serial.println("INVALID OPCODE");
+    // Serial.println("INVALID OPCODE");
     return 0;
 }
 

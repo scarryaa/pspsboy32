@@ -10,34 +10,20 @@ Memory::Memory()
     cartridgeRam = new uint8_t[0x2000];
 }
 
-void Memory::loadRom()
+// load rom from data
+void Memory::loadRom(char *data)
 {
-    if (!SD.exists("/roms/04-op r,imm.gb"))
+    // Load ROM implementation
+    for (int i = 0; i < sizeof(romBank); i++)
     {
-        Serial.println("ROM file does not exist");
-        return;
+        romBank[i] = data[i];
     }
 
-    File romFile = SD.open("/roms/07-jr,jp,call,ret,rst.gb");
-    if (!romFile)
+    // Load switchable ROM bank
+    for (int i = 0; i < sizeof(switchableRomBank); i++)
     {
-        Serial.println("Error opening ROM file");
-        return;
+        switchableRomBank[i] = data[i];
     }
-
-    size_t bytesRead = romFile.readBytes((char *)romBank, sizeof(romBank));
-
-    Serial.print(bytesRead);
-    Serial.println(" bytes read into ROM bank");
-
-    // write to switchable ROM bank
-    romFile.seek(0x4000);
-    bytesRead = romFile.readBytes((char *)switchableRomBank, sizeof(switchableRomBank));
-    Serial.print(bytesRead);
-    Serial.println(" bytes read into switchable ROM bank");
-
-    Serial.println("ROM file read OK");
-    romFile.close();
 }
 
 Memory::~Memory()
@@ -125,7 +111,7 @@ void Memory::writeByte(uint16_t address, uint8_t value)
         if (value == 0x81)
         {
             // When 0x81 is written to SC, send the character in SB to Serial
-            Serial.write(ioRegisters[0x01]);
+            // Serial.write(ioRegisters[0x01]);
         }
     }
 
