@@ -1,6 +1,10 @@
+#ifndef __ESP_FILE_READER_H__
+#define __ESP_FILE_READER_H__
+
 #include "FS.h"
 #include "file-reader.h"
-#include "SPIFFS.h"
+#include "SD.h"
+#include <string>
 
 class ESPFileReader : public FileReader
 {
@@ -9,13 +13,22 @@ class ESPFileReader : public FileReader
 public:
     bool open(const std::string &path) override
     {
-        file = SPIFFS.open(path.c_str(), "r");
+        file = SD.open(path.c_str(), FILE_APPEND);
         return file;
     }
 
     size_t read(char *buffer, size_t size) override
     {
         return file.readBytes(buffer, size);
+    }
+
+    void write(std::string value) override
+    {
+        Serial.println(value.c_str());
+        if (file)
+        {
+            file.print(value.c_str());
+        }
     }
 
     void close() override
@@ -26,3 +39,5 @@ public:
         }
     }
 };
+
+#endif // __ESP_FILE_READER_H__

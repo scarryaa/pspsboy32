@@ -23,6 +23,15 @@
 
 #include <cstdint>
 #include "../memory/memory.h"
+#include "../../logger/logger.h"
+#include <string>
+#include "../../file-reader/file-reader.h"
+
+#ifdef PLATFORM_ESP32
+#include "../../file-reader/esp-file-reader.h"
+#else
+#include "../../file-reader/desktop-file-reader.h"
+#endif
 
 class CPU
 {
@@ -404,6 +413,8 @@ public:
     uint8_t CALL_cc_nn(uint8_t flag);
 
 private:
+    std::unique_ptr<FileReader> fileReader;
+
     // CPU registers
     uint8_t A, F;
     uint8_t B, C, D, E, H, L;
@@ -417,7 +428,7 @@ private:
     void executeInstruction(uint8_t opcode);
     void add(uint8_t value);
     void sub(uint8_t value);
-    void printStatus();
+    void logStatus();
 };
 
 #endif // CPU_H

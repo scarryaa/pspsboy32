@@ -8,6 +8,7 @@ class FileReader
 public:
     virtual bool open(const std::string &path) = 0;
     virtual size_t read(char *buffer, size_t size) = 0;
+    virtual void write(std::string value) = 0;
     virtual void close() = 0;
     virtual ~FileReader() {}
 };

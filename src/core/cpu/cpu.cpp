@@ -13,6 +13,12 @@ bool CPU::IME = false;
 
 CPU::CPU(Memory &memory) : memory(memory)
 {
+#ifdef PLATFORM_ESP32
+    fileReader.reset(new ESPFileReader());
+#else
+    fileReader.reset(new DesktopFileReader());
+#endif
+
     instructionTable[0x00] = &CPU::NoOperation;
     instructionTable[0x10] = &CPU::Stop;
     instructionTable[0x20] = &CPU::JR_NZ_i8;
@@ -353,31 +359,28 @@ bool CPU::checkFlag()
     return false;
 }
 
-// void CPU::printStatus()
-// {
-//     char buffer[200];
+void CPU::logStatus()
+{
+    Logger logger;
 
-//     uint8_t mem0 = memory.readByte(PC);
-//     uint8_t mem1 = memory.readByte(PC + 1);
-//     uint8_t mem2 = memory.readByte(PC + 2);
-//     uint8_t mem3 = memory.readByte(PC + 3);
+    uint8_t mem0 = memory.readByte(PC);
+    uint8_t mem1 = memory.readByte(PC + 1);
+    uint8_t mem2 = memory.readByte(PC + 2);
+    uint8_t mem3 = memory.readByte(PC + 3);
 
-//     // Format the string with the register values and memory contents in hexadecimal format
-//     snprintf(buffer, sizeof(buffer),
-//              "A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X",
-//              A, F, B, C, D, E, H, L, SP, PC, mem0, mem1, mem2, mem3);
+    std::string msg = logger.formatLogMessage(A, F, B, C, D, E, H, L, SP, PC, mem0, mem1, mem2, mem3);
 
-//     File file = SD.open("/status.txt", FILE_APPEND);
-//     if (file)
-//     {
-//         file.println(buffer);
-//         file.close();
-//     }
-//     else
-//     {
-//         Serial.println("Error opening status.txt");
-//     }
-// }
+    // TODO fix this
+    if (fileReader->open("status.txt"))
+    {
+        fileReader->write(msg);
+        fileReader->close();
+    }
+    else
+    {
+        logger.println(msg);
+    }
+}
 
 void CPU::executeInstruction(uint8_t opcode)
 {
@@ -386,7 +389,7 @@ void CPU::executeInstruction(uint8_t opcode)
     //     Serial.println(opcode, HEX);
     // }
 
-    // printStatus();
+    logStatus();
 
     InstructionFunc func = instructionTable[opcode];
     uint8_t cycles = (this->*func)();

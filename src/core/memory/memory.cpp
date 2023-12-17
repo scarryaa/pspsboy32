@@ -2,6 +2,8 @@
 
 Memory::Memory()
 {
+    romBank = new uint8_t[0x4000];
+    switchableRomBank = new uint8_t[0x4000];
     ioRegisters = new uint8_t[128];
     highRam = new uint8_t[127];
     oam = new uint8_t[160];
@@ -13,16 +15,23 @@ Memory::Memory()
 // load rom from data
 void Memory::loadRom(char *data)
 {
+    Logger logger;
     // Load ROM implementation
-    for (int i = 0; i < sizeof(romBank); i++)
+    for (int i = 0; i < 0x4000; i++)
     {
         romBank[i] = data[i];
     }
 
     // Load switchable ROM bank
-    for (int i = 0; i < sizeof(switchableRomBank); i++)
+    for (int i = 0x4000; i < 0x8000; i++)
     {
         switchableRomBank[i] = data[i];
+    }
+
+    // print out romBank
+    for (int i = 0; i < 0x4000; i++)
+    {
+        logger.println(romBank[i]);
     }
 }
 

@@ -16,6 +16,7 @@ TFT_eSPI tft = TFT_eSPI();
 #include "core/core.h"
 #include "./file-reader/file-reader.h"
 #include <memory>
+#include "./logger/logger.h"
 
 Core core;
 std::unique_ptr<FileReader> fileReader;
@@ -25,6 +26,7 @@ std::unique_ptr<FileReader> fileReader;
 
 void setup()
 {
+  Logger logger;
   fileReader = std::unique_ptr<ESPFileReader>(new ESPFileReader());
   Serial.begin(115200);
   tft.init();
@@ -42,22 +44,26 @@ void setup()
   Serial.println("setup OK");
 
   // Read ROM file
-  Serial.println("Reading ROM file...");
   Serial.println(SD.exists("roms") ? "roms folder exists" : "roms folder does not exist");
 
   // Reset the emulator
   core.reset();
 
   // Read ROM file into memory
-  if (fileReader->open("./roms/07-jr,jp,call,ret,rst.gb"))
+  if (fileReader->open("/roms/07-jr,jp,call,ret,rst.gb"))
   {
-    char buffer[1024];
-    Serial.println("Reading ROM file...");
-    size_t bytesRead = fileReader->read(buffer, sizeof(buffer));
+    size_t buffer_size = 0x8000;
+    char *buffer = new char[buffer_size];
+    size_t bytesRead = fileReader->read(buffer, buffer_size);
 
     core.loadRom(buffer);
 
     fileReader->close();
+    delete[] buffer;
+  }
+  else
+  {
+    Serial.println("Failed to open ROM file");
   }
 }
 
@@ -109,13 +115,18 @@ int main()
   // Read ROM file into memory
   if (fileReader->open("../roms/07-jr,jp,call,ret,rst.gb"))
   {
-    char buffer[1024];
+    char *buffer = new char[1024];
     size_t bytesRead = fileReader->read(buffer, sizeof(buffer));
 
     std::cout << "bytesRead: " << bytesRead << std::endl;
     core.loadRom(buffer);
 
     fileReader->close();
+    delete[] buffer;
+  }
+  else
+  {
+    std::cout << "Failed to open ROM file" << std::endl;
   }
 
   while (true)

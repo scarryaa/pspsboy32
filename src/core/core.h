@@ -27,9 +27,4 @@ private:
     Input input;
 };
 
-extern PPU ppu;
-extern Memory memory;
-extern CPU cpu;
-extern Input input;
-
 #endif // CORE_H

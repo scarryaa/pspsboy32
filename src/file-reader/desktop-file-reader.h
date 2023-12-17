@@ -1,14 +1,17 @@
 #include <fstream>
 #include "file-reader.h"
 
+#ifndef __DESKTOP_FILE_READER_H__
+#define __DESKTOP_FILE_READER_H__
+
 class DesktopFileReader : public FileReader
 {
-    std::ifstream file;
+    std::fstream file;
 
 public:
     bool open(const std::string &path) override
     {
-        file.open(path, std::ios::binary);
+        file.open(path, std::ios::binary | std::ios::in | std::ios::out);
         return file.is_open();
     }
 
@@ -21,6 +24,14 @@ public:
         return size;
     }
 
+    void write(std::string value) override
+    {
+        if (file.is_open())
+        {
+            file << value;
+        }
+    }
+
     void close() override
     {
         if (file.is_open())
@@ -29,3 +40,5 @@ public:
         }
     }
 };
+
+#endif // __DESKTOP_FILE_READER_H__
