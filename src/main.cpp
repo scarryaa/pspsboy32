@@ -13,10 +13,10 @@ SPIClass SDSPI(FSPI);
 TFT_eSPI tft = TFT_eSPI();
 #endif
 
-#include "core/core.h"
 #include "./file-reader/file-reader.h"
 #include <memory>
 #include "./logger/logger.h"
+#include "./core/core.h"
 
 Core core;
 std::unique_ptr<FileReader> fileReader;
@@ -55,8 +55,9 @@ void setup()
     size_t buffer_size = 0x8000;
     char *buffer = new char[buffer_size];
     size_t bytesRead = fileReader->read(buffer, buffer_size);
+    Serial.println("bytesRead: " + String(bytesRead));
 
-    core.loadRom(buffer);
+    core.loadRom(buffer, 0x8000);
 
     fileReader->close();
     delete[] buffer;
@@ -113,13 +114,13 @@ int main()
   std::cout << "Reading ROM file..." << std::endl;
 
   // Read ROM file into memory
-  if (fileReader->open("../roms/07-jr,jp,call,ret,rst.gb"))
+  if (fileReader->open("roms/07-jr,jp,call,ret,rst.gb"))
   {
-    char *buffer = new char[1024];
-    size_t bytesRead = fileReader->read(buffer, sizeof(buffer));
+    char *buffer = new char[0x8000];
 
+    size_t bytesRead = fileReader->read(buffer, 0x8000);
     std::cout << "bytesRead: " << bytesRead << std::endl;
-    core.loadRom(buffer);
+    core.loadRom(buffer, bytesRead);
 
     fileReader->close();
     delete[] buffer;
@@ -133,6 +134,5 @@ int main()
   {
     core.update();
   }
-  return 0;
 }
 #endif

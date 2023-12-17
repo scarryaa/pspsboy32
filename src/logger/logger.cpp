@@ -27,6 +27,11 @@ std::string Logger::formatLogMessage(
 #ifdef PLATFORM_ESP32
 #include <USBCDC.h>
 
+void Logger::print(uint8_t value)
+{
+    Serial.print(value);
+}
+
 void Logger::print(const std::string &message)
 {
     Serial.print(message.c_str());
@@ -44,6 +49,11 @@ void Logger::println(uint8_t value)
 
 #else
 #include <iostream>
+
+void Logger::print(uint8_t value)
+{
+    std::cout << value;
+}
 
 void Logger::print(const std::string &message)
 {

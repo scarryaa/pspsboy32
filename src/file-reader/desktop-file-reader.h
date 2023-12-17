@@ -23,13 +23,19 @@ public:
 
     bool open(const std::string &path) override
     {
-        // Open for reading and writing in binary mode
-        file = fopen(path.c_str(), "rb+");
+        // First, try to open the file for reading and writing without truncating it
+        file = fopen(path.c_str(), "ab+");
         if (!file)
         {
-            std::cerr << "Failed to open file: " << path << std::endl;
+            // If the file does not exist, open it for writing and reading, which creates the file
+            file = fopen(path.c_str(), "wb+");
+            if (!file)
+            {
+                std::cerr << "Failed to open or create file: " << path << std::endl;
+                return false;
+            }
         }
-        return file != nullptr;
+        return true;
     }
 
     size_t read(char *buffer, size_t size) override
@@ -46,6 +52,27 @@ public:
             std::cerr << "Read error occurred." << std::endl;
         }
         return bytesRead;
+    }
+
+    void writeLine(std::string value) override
+    {
+        if (!file)
+        {
+            std::cerr << "File not open for writing." << std::endl;
+            return;
+        }
+
+        size_t bytesWritten = fwrite(value.c_str(), 1, value.size(), file);
+        if (bytesWritten != value.size())
+        {
+            std::cerr << "Write error occurred." << std::endl;
+        }
+
+        bytesWritten = fwrite("\n", 1, 1, file);
+        if (bytesWritten != 1)
+        {
+            std::cerr << "Write error occurred." << std::endl;
+        }
     }
 
     void write(std::string value) override

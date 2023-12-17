@@ -40,8 +40,8 @@ void Core::reset()
 }
 
 // loadRom from data
-void Core::loadRom(char *data)
+void Core::loadRom(char *data, size_t size)
 {
     // Load ROM implementation
-    memory.loadRom(data);
+    memory.loadRom(data, size);
 }

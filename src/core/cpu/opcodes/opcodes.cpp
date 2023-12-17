@@ -108,8 +108,11 @@ uint8_t CPU::LD_mem_DE_A()
 // 0x22
 uint8_t CPU::LD_mem_HL_inc_A()
 {
-    memory.writeByte((H << 8) | L, A);
-    L += 1;
+    uint16_t HL = (H << 8) | L;
+    memory.writeByte(HL, A);
+    HL += 1;
+    H = (HL >> 8) & 0xFF;
+    L = HL & 0xFF;
     PC += 1;
     return 8;
 }
@@ -1120,7 +1123,7 @@ uint8_t CPU::ADD_A_R(uint8_t reg)
 
     A = result;
 
-    PC += 1;
+    PC += 2;
     return 4;
 }
 
@@ -1252,7 +1255,7 @@ uint8_t CPU::SUB_A_R(uint8_t reg)
 
     A = result;
 
-    PC += 1;
+    PC += 2;
     return 4;
 }
 
@@ -1383,7 +1386,7 @@ uint8_t CPU::AND_A_R(uint8_t reg)
     SET_FLAG_H(CPU::F, true);
     SET_FLAG_C(CPU::F, false);
 
-    PC += 1;
+    PC += 2;
     return 4;
 }
 
@@ -1572,10 +1575,10 @@ uint8_t CPU::CP_A_R(uint8_t reg)
 
     SET_FLAG_Z(CPU::F, result == 0);
     SET_FLAG_N(CPU::F, true);
-    SET_FLAG_H(CPU::F, (A & 0x0F) < (reg & 0x0F));
+    SET_FLAG_H(CPU::F, ((A & 0x0F) - (reg & 0x0F)) & 0x10);
     SET_FLAG_C(CPU::F, A < reg);
 
-    PC += 1;
+    PC += 2;
     return 4;
 }
 

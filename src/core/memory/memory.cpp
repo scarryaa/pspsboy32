@@ -13,7 +13,7 @@ Memory::Memory()
 }
 
 // load rom from data
-void Memory::loadRom(char *data)
+void Memory::loadRom(char *data, size_t size)
 {
     Logger logger;
     // Load ROM implementation
@@ -23,15 +23,9 @@ void Memory::loadRom(char *data)
     }
 
     // Load switchable ROM bank
-    for (int i = 0x4000; i < 0x8000; i++)
+    for (int i = 0, j = 0x4000; i < 0x4000; ++i, ++j)
     {
-        switchableRomBank[i] = data[i];
-    }
-
-    // print out romBank
-    for (int i = 0; i < 0x4000; i++)
-    {
-        logger.println(romBank[i]);
+        switchableRomBank[i] = data[j];
     }
 }
 
@@ -100,6 +94,7 @@ uint8_t Memory::readByte(uint16_t address)
     else if (address == 0xFFFF)
     {
         // Interrupt enable register
+        return 0xFF;
     }
 
     // Default
@@ -108,6 +103,8 @@ uint8_t Memory::readByte(uint16_t address)
 
 void Memory::writeByte(uint16_t address, uint8_t value)
 {
+    Logger logger;
+
     if (address == 0xFF01)
     {
         // Write to SB (Serial transfer data)
@@ -119,8 +116,7 @@ void Memory::writeByte(uint16_t address, uint8_t value)
         ioRegisters[0x02] = value;
         if (value == 0x81)
         {
-            // When 0x81 is written to SC, send the character in SB to Serial
-            // Serial.write(ioRegisters[0x01]);
+            logger.print(ioRegisters[0x01]);
         }
     }
 
@@ -146,6 +142,7 @@ void Memory::writeByte(uint16_t address, uint8_t value)
     }
     else if (address >= 0xFF00 && address < 0xFF80)
     {
+        ioRegisters[0x44] = 0x90;
         // Write to I/O registers
         ioRegisters[address - 0xFF00] = value;
     }

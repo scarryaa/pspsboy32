@@ -307,8 +307,8 @@ uint8_t CPU::fetchInstruction()
 {
     // Fetch the next instruction from memory
     uint8_t opcode = memory.readByte(PC);
-    // Serial.print("Fetched instruction: ");
-    // Serial.println(opcode, HEX);
+    // Logger logger;
+    // logger.println("Fetched instruction: " + opcode);
 
     return opcode;
 }
@@ -370,10 +370,9 @@ void CPU::logStatus()
 
     std::string msg = logger.formatLogMessage(A, F, B, C, D, E, H, L, SP, PC, mem0, mem1, mem2, mem3);
 
-    // TODO fix this
-    if (fileReader->open("status.txt"))
+    if (fileReader->open("status.txt"), true)
     {
-        fileReader->write(msg);
+        fileReader->writeLine(msg);
         fileReader->close();
     }
     else
@@ -384,12 +383,7 @@ void CPU::logStatus()
 
 void CPU::executeInstruction(uint8_t opcode)
 {
-    // if (opcode != 0) {
-    //     Serial.print("Executing instruction: ");
-    //     Serial.println(opcode, HEX);
-    // }
-
-    logStatus();
+    // logStatus();
 
     InstructionFunc func = instructionTable[opcode];
     uint8_t cycles = (this->*func)();

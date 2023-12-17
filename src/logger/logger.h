@@ -9,6 +9,7 @@
 class Logger
 {
 public:
+    static void print(uint8_t value);
     void print(const std::string &message);
     void println(const std::string &message);
     void println(uint8_t value);

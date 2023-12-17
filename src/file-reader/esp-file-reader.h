@@ -24,10 +24,19 @@ public:
 
     void write(std::string value) override
     {
-        Serial.println(value.c_str());
+        Serial.print(value.c_str());
         if (file)
         {
             file.print(value.c_str());
+        }
+    }
+
+    void writeLine(std::string value) override
+    {
+        Serial.println(value.c_str());
+        if (file)
+        {
+            file.println(value.c_str());
         }
     }
 

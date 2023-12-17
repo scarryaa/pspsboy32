@@ -13,7 +13,7 @@ public:
     uint8_t readByte(uint16_t address);
     void writeByte(uint16_t address, uint8_t value);
     void reset();
-    void loadRom(char *data);
+    void loadRom(char *data, size_t size);
 
 private:
     uint8_t *romBank;           // Fixed ROM bank (16KB)

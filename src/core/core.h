@@ -18,7 +18,7 @@ public:
     void shutdown();
 
     void reset();
-    void loadRom(char *data);
+    void loadRom(char *data, size_t size);
 
 private:
     PPU ppu;
