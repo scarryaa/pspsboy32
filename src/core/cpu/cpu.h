@@ -45,7 +45,7 @@ public:
     void handleInterrupts();
     void setFlag();
     bool checkFlag();
-    void updateTimers();
+    void updateTimers(uint16_t cycles);
     uint8_t fetchInstruction();
     uint8_t executeExtendedInstruction(uint8_t opcode);
     uint32_t debugCounter = 0;
@@ -58,6 +58,22 @@ public:
 
     // Interrupt master enable flag
     static bool IME;
+
+    // Interrupt enable register
+    static uint8_t IE;
+
+    // Interrupt request register
+    static uint8_t IF;
+
+    // Timer registers
+    static uint8_t DIV;
+    static uint8_t TIMA;
+    static uint8_t TMA;
+    static uint8_t TAC;
+
+    // Timer counters
+    static uint32_t divCounter;
+    static uint32_t timerCounter;
 
     // Opcode function declarations
     uint8_t INVALID();
@@ -697,7 +713,7 @@ private:
     Memory &memory;
 
     // Private methods for CPU functionality
-    void executeInstruction(uint8_t opcode);
+    uint8_t executeInstruction(uint8_t opcode);
     void add(uint8_t value);
     void sub(uint8_t value);
     void logStatus();

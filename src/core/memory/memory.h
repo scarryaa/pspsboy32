@@ -24,6 +24,9 @@ private:
     uint8_t *oam;               // OAM (160B)
     uint8_t *wram;              // Working RAM (8KB)
     uint8_t *vram;              // Video RAM (8KB)
+
+    uint8_t IE; // Interrupt enable register
+    uint8_t IF; // Interrupt flag register
 };
 
 #endif // MEMORY_H

@@ -10,6 +10,9 @@ Memory::Memory()
     wram = new uint8_t[0x2000];
     vram = new uint8_t[0x2000];
     cartridgeRam = new uint8_t[0x2000];
+
+    IE = 0;
+    IF = 0;
 }
 
 // load rom from data
@@ -91,10 +94,15 @@ uint8_t Memory::readByte(uint16_t address)
         // Unusable memory
         return 0xFF;
     }
+    else if (address == 0xFF0F)
+    {
+        // Interrupt flag register
+        return IF;
+    }
     else if (address == 0xFFFF)
     {
         // Interrupt enable register
-        return 0xFF;
+        return IE;
     }
 
     // Default
@@ -160,9 +168,15 @@ void Memory::writeByte(uint16_t address, uint8_t value)
     {
         // Unusable memory
     }
+    else if (address == 0xFF0F)
+    {
+        // Interrupt flag register
+        IF = value;
+    }
     else if (address == 0xFFFF)
     {
         // Interrupt enable register
+        IE = value;
     }
 }
 

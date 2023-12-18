@@ -1964,6 +1964,7 @@ uint8_t CPU::LD_HL_SP_r8()
 // 0xC9
 uint8_t CPU::RET()
 {
+    std::cout << "RET" << std::endl;
     uint8_t low = memory.readByte(SP);
     SP += 1;
     uint8_t high = memory.readByte(SP);
@@ -1975,12 +1976,13 @@ uint8_t CPU::RET()
 // 0xD9
 uint8_t CPU::RETI()
 {
-    IME = true;
+    std::cout << "RETI" << std::endl;
     uint8_t low = memory.readByte(SP);
     SP += 1;
     uint8_t high = memory.readByte(SP);
     SP += 1;
     PC = (high << 8) | low;
+    IME = true;
     return 16;
 }
 

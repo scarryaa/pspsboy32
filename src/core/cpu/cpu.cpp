@@ -11,6 +11,14 @@ bool CPU::stopped = false;
 bool CPU::halted = false;
 bool CPU::IME = false;
 
+uint8_t CPU::DIV = 0;
+uint8_t CPU::TIMA = 0;
+uint8_t CPU::TMA = 0;
+uint8_t CPU::TAC = 0;
+
+uint32_t CPU::divCounter = 0;
+uint32_t CPU::timerCounter = 0;
+
 CPU::CPU(Memory &memory) : memory(memory)
 {
 #ifdef PLATFORM_ESP32
@@ -585,34 +593,72 @@ uint8_t CPU::executeExtendedInstruction(uint8_t opcode)
 
 void CPU::executeCycle()
 {
-    // Fetch the next instruction
-    uint8_t opcode = fetchInstruction();
+    uint8_t cycles = 0;
 
-    // Decode and execute the instruction
-    executeInstruction(opcode);
+    // Handle interrupts if IME is set and there's a pending interrupt
+    if (IME && ((memory.readByte(0xFFFF) & memory.readByte(0xFF0F)) != 0))
+    {
+        handleInterrupts();
+    }
 
-    // Update the timers
-    updateTimers();
+    // Fetch and execute instruction if not halted or stopped
+    if (!halted && !stopped)
+    {
+        uint8_t opcode = fetchInstruction();
+        cycles = executeInstruction(opcode);
+    }
 
-    // Handle interrupts
-    handleInterrupts();
+    updateTimers(cycles);
 }
 
 void CPU::handleInterrupts()
 {
-    // Handle interrupts implementation
-}
+    if (!IME)
+    {
+        return;
+    }
 
-void CPU::setFlag()
-{
-    // Set flag implementation
-}
+    for (int i = 0; i < 5; i++)
+    {
+        uint8_t mask = 1 << i;
+        // Check if interrupt is enabled and requested
+        if (memory
+                .readByte(0xFFFF) &
+            memory.readByte(0xFF0F) & mask)
+        {
+            IME = false;
+            memory.writeByte(0xFF0F, memory.readByte(0xFF0F) & ~mask);
+            // Push current PC on stack
+            memory.writeByte(--SP, PC >> 8);
+            memory.writeByte(--SP, PC & 0xFF);
 
-bool CPU::checkFlag()
-{
-    // Check flag implementation
-
-    return false;
+            // Jump to interrupt handler
+            switch (i)
+            {
+            case 0:
+                std::cout << "V-Blank interrupt" << std::endl;
+                PC = 0x0040;
+                break; // V-Blank
+            case 1:
+                std::cout << "LCD STAT interrupt" << std::endl;
+                PC = 0x0048;
+                break; // LCD STAT
+            case 2:
+                std::cout << "Timer interrupt" << std::endl;
+                PC = 0x0050;
+                break; // Timer
+            case 3:
+                std::cout << "Serial interrupt" << std::endl;
+                PC = 0x0058;
+                break; // Serial
+            case 4:
+                std::cout << "Joypad interrupt" << std::endl;
+                PC = 0x0060;
+                break; // Joypad
+            }
+            break;
+        }
+    }
 }
 
 void CPU::logStatus()
@@ -637,25 +683,59 @@ void CPU::logStatus()
     }
 }
 
-void CPU::executeInstruction(uint8_t opcode)
+uint8_t CPU::executeInstruction(uint8_t opcode)
 {
     // logStatus();
 
     InstructionFunc func = instructionTable[opcode];
-    uint8_t cycles = (this->*func)();
+    return (this->*func)();
 }
 
-void CPU::add(uint8_t value)
+void CPU::updateTimers(uint16_t cycles)
 {
-    // Add implementation
-}
+    // Update divider register
+    divCounter += cycles;
+    if (divCounter >= 256)
+    {
+        memory.writeByte(0xFF04, memory.readByte(0xFF04) + 1);
+        divCounter -= 256;
+    }
 
-void CPU::sub(uint8_t value)
-{
-    // Subtract implementation
-}
-
-void CPU::updateTimers()
-{
-    // Update any relevant timers or counters
+    // Update timer register
+    uint8_t timerControl = memory.readByte(0xFF07);
+    if (timerControl & 0x04)
+    {
+        timerCounter += cycles;
+        uint16_t timerFrequency = 1024;
+        switch (timerControl & 0x03)
+        {
+        case 0:
+            timerFrequency = 1024;
+            break;
+        case 1:
+            timerFrequency = 16;
+            break;
+        case 2:
+            timerFrequency = 64;
+            break;
+        case 3:
+            timerFrequency = 256;
+            break;
+        }
+        if (timerCounter >= timerFrequency)
+        {
+            uint8_t timerValue = memory.readByte(0xFF05);
+            timerValue++;
+            if (timerValue == 0)
+            {
+                memory.writeByte(0xFF05, memory.readByte(0xFF06));        // Reload TIMA with TMA
+                memory.writeByte(0xFF0F, memory.readByte(0xFF0F) | 0x04); // Set Timer interrupt flag
+            }
+            else
+            {
+                memory.writeByte(0xFF05, timerValue);
+            }
+            timerCounter -= timerFrequency;
+        }
+    }
 }
