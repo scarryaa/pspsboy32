@@ -1870,6 +1870,7 @@ uint8_t CPU::AND_A_d8()
 uint8_t CPU::OR_A_d8()
 {
     uint8_t value = memory.readByte(PC + 1);
+    PC += 1;
     return OR_A_R(value);
 }
 
@@ -1964,7 +1965,6 @@ uint8_t CPU::LD_HL_SP_r8()
 // 0xC9
 uint8_t CPU::RET()
 {
-    std::cout << "RET" << std::endl;
     uint8_t low = memory.readByte(SP);
     SP += 1;
     uint8_t high = memory.readByte(SP);
@@ -2049,7 +2049,7 @@ uint8_t CPU::CB()
 // 0xFB
 uint8_t CPU::EI()
 {
-    IME = true;
+    shouldEnableInterrupts = true;
     PC += 1;
     return 4;
 }

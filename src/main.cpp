@@ -52,12 +52,11 @@ void setup()
   // Read ROM file into memory
   if (fileReader->open("/roms/07-jr,jp,call,ret,rst.gb"))
   {
-    size_t buffer_size = 0x8000;
-    char *buffer = new char[buffer_size];
-    size_t bytesRead = fileReader->read(buffer, buffer_size);
-    Serial.println("bytesRead: " + String(bytesRead));
+    char *buffer = new char[0x8000];
 
-    core.loadRom(buffer, 0x8000);
+    size_t bytesRead = fileReader->read(buffer, 0x8000);
+    Serial.println("bytesRead: " + String(bytesRead));
+    core.loadRom(buffer, bytesRead);
 
     fileReader->close();
     delete[] buffer;
@@ -99,10 +98,39 @@ void processAudio()
 
 #ifdef PLATFORM_NATIVE
 #include "file-reader/desktop-file-reader.h"
+#include <SDL.h>
 #include <iostream>
 
-int main()
+int main(int argc, char *argv[])
 {
+  // Initialize SDL
+  if (SDL_Init(SDL_INIT_VIDEO) < 0)
+  {
+    std::cerr << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
+    return -1;
+  }
+
+  // Create SDL window
+  SDL_Window *window = SDL_CreateWindow("pspsboy32",
+                                        SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                                        640, 480, SDL_WINDOW_SHOWN);
+  if (window == nullptr)
+  {
+    std::cerr << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
+    SDL_Quit();
+    return -1;
+  }
+
+  // Create SDL renderer
+  SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+  if (renderer == nullptr)
+  {
+    std::cerr << "Renderer could not be created! SDL_Error: " << SDL_GetError() << std::endl;
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+    return -1;
+  }
+
   fileReader = std::unique_ptr<DesktopFileReader>(new DesktopFileReader());
 
   // Initialize the emulator components
@@ -130,9 +158,37 @@ int main()
     std::cout << "Failed to open ROM file" << std::endl;
   }
 
-  while (true)
+  // Main loop
+  bool running = true;
+  SDL_Event e;
+  while (running)
   {
+    while (SDL_PollEvent(&e) != 0)
+    {
+      if (e.type == SDL_QUIT)
+      {
+        running = false;
+      }
+      // Handle other events like input
+    }
+
+    // Update emulator core
     core.update();
+
+    // Clear screen
+    SDL_RenderClear(renderer);
+
+    // Render the emulator screen buffer to the window
+    // SDL_RenderCopy(renderer, emulatorTexture, nullptr, nullptr);
+
+    // Update screen
+    SDL_RenderPresent(renderer);
   }
+
+  // Cleanup
+  SDL_DestroyRenderer(renderer);
+  SDL_DestroyWindow(window);
+  SDL_Quit();
+  return 0;
 }
 #endif

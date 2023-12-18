@@ -50,6 +50,8 @@ public:
     uint8_t executeExtendedInstruction(uint8_t opcode);
     uint32_t debugCounter = 0;
 
+    static bool shouldEnableInterrupts;
+
     // Stop flag
     static bool stopped;
 

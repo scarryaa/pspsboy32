@@ -1,6 +1,6 @@
 #include "ppu.h"
 
-PPU::PPU()
+PPU::PPU(Memory &memory) : memory(memory)
 {
     // Constructor implementation
 }
@@ -42,7 +42,10 @@ void PPU::handlePixelTransfer()
 
 void PPU::renderScanline()
 {
-    // renderScanline implementation
+    // Render a single scanline
+    handleOAMSearch();
+    handlePixelTransfer();
+    handleHBlank();
 }
 
 void PPU::renderTiles()

@@ -2,11 +2,12 @@
 #define PPU_H
 
 #include <cstdint>
+#include "../memory/memory.h"
 
 class PPU
 {
 public:
-    PPU();
+    PPU(Memory &memory);
     ~PPU();
 
     void reset();
@@ -30,6 +31,9 @@ private:
     uint8_t WY, WX;     // Window Y and Window X
 
     int scanlineCounter;
+
+    // Reference to the memory object
+    Memory &memory;
 
     // Frame buffer to store the final rendered image
     uint8_t frameBuffer[160 * 144 * 3];

@@ -10,6 +10,7 @@ CBInstructionFunc CBInstructionTable[256];
 bool CPU::stopped = false;
 bool CPU::halted = false;
 bool CPU::IME = false;
+bool CPU::shouldEnableInterrupts = false;
 
 uint8_t CPU::DIV = 0;
 uint8_t CPU::TIMA = 0;
@@ -571,8 +572,9 @@ void CPU::reset()
 uint8_t CPU::fetchInstruction()
 {
     // Fetch the next instruction from memory
+    Logger logger;
     uint8_t opcode = memory.readByte(PC);
-    // std::cout << "PC: " << std::hex << PC << " Opcode: " << std::hex << static_cast<int>(opcode) << std::endl;
+    // logger.println(logger.formatLogMessage(A, F, B, C, D, E, H, L, SP, PC, opcode, 0, 0, 0));
     // print every twenty five thousandth line
     // if (debugCounter % 25000 == 0)
     // {
@@ -605,6 +607,12 @@ void CPU::executeCycle()
     if (!halted && !stopped)
     {
         uint8_t opcode = fetchInstruction();
+        if (shouldEnableInterrupts)
+        {
+            IME = true;
+            shouldEnableInterrupts = false;
+        }
+
         cycles = executeInstruction(opcode);
     }
 

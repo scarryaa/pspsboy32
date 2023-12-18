@@ -1,6 +1,6 @@
 #include "core.h"
 
-Core::Core() : cpu(memory)
+Core::Core() : cpu(memory), ppu(memory)
 {
 }
 
