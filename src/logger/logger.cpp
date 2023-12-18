@@ -67,7 +67,7 @@ void Logger::println(const std::string &message)
 
 void Logger::println(uint8_t value)
 {
-    std::cout << value << std::endl;
+    std::cout << static_cast<int>(value) << std::endl;
 }
 
 #endif

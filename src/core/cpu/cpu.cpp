@@ -19,6 +19,263 @@ CPU::CPU(Memory &memory) : memory(memory)
     fileReader.reset(new DesktopFileReader());
 #endif
 
+    CBInstructionTable[0x00] = &CPU::RLC_B;
+    CBInstructionTable[0x01] = &CPU::RLC_C;
+    CBInstructionTable[0x02] = &CPU::RLC_D;
+    CBInstructionTable[0x03] = &CPU::RLC_E;
+    CBInstructionTable[0x04] = &CPU::RLC_H;
+    CBInstructionTable[0x05] = &CPU::RLC_L;
+    CBInstructionTable[0x06] = &CPU::RLC_HL;
+    CBInstructionTable[0x07] = &CPU::RLC_A;
+    CBInstructionTable[0x08] = &CPU::RRC_B;
+    CBInstructionTable[0x09] = &CPU::RRC_C;
+    CBInstructionTable[0x0A] = &CPU::RRC_D;
+    CBInstructionTable[0x0B] = &CPU::RRC_E;
+    CBInstructionTable[0x0C] = &CPU::RRC_H;
+    CBInstructionTable[0x0D] = &CPU::RRC_L;
+    CBInstructionTable[0x0E] = &CPU::RRC_HL;
+    CBInstructionTable[0x0F] = &CPU::RRC_A;
+    CBInstructionTable[0x10] = &CPU::RL_B;
+    CBInstructionTable[0x11] = &CPU::RL_C;
+    CBInstructionTable[0x12] = &CPU::RL_D;
+    CBInstructionTable[0x13] = &CPU::RL_E;
+    CBInstructionTable[0x14] = &CPU::RL_H;
+    CBInstructionTable[0x15] = &CPU::RL_L;
+    CBInstructionTable[0x16] = &CPU::RL_HL;
+    CBInstructionTable[0x17] = &CPU::RL_A;
+    CBInstructionTable[0x18] = &CPU::RR_B;
+    CBInstructionTable[0x19] = &CPU::RR_C;
+    CBInstructionTable[0x1A] = &CPU::RR_D;
+    CBInstructionTable[0x1B] = &CPU::RR_E;
+    CBInstructionTable[0x1C] = &CPU::RR_H;
+    CBInstructionTable[0x1D] = &CPU::RR_L;
+    CBInstructionTable[0x1E] = &CPU::RR_HL;
+    CBInstructionTable[0x1F] = &CPU::RR_A;
+    CBInstructionTable[0x20] = &CPU::SLA_B;
+    CBInstructionTable[0x21] = &CPU::SLA_C;
+    CBInstructionTable[0x22] = &CPU::SLA_D;
+    CBInstructionTable[0x23] = &CPU::SLA_E;
+    CBInstructionTable[0x24] = &CPU::SLA_H;
+    CBInstructionTable[0x25] = &CPU::SLA_L;
+    CBInstructionTable[0x26] = &CPU::SLA_HL;
+    CBInstructionTable[0x27] = &CPU::SLA_A;
+    CBInstructionTable[0x28] = &CPU::SRA_B;
+    CBInstructionTable[0x29] = &CPU::SRA_C;
+    CBInstructionTable[0x2A] = &CPU::SRA_D;
+    CBInstructionTable[0x2B] = &CPU::SRA_E;
+    CBInstructionTable[0x2C] = &CPU::SRA_H;
+    CBInstructionTable[0x2D] = &CPU::SRA_L;
+    CBInstructionTable[0x2E] = &CPU::SRA_HL;
+    CBInstructionTable[0x2F] = &CPU::SRA_A;
+    CBInstructionTable[0x30] = &CPU::SWAP_B;
+    CBInstructionTable[0x31] = &CPU::SWAP_C;
+    CBInstructionTable[0x32] = &CPU::SWAP_D;
+    CBInstructionTable[0x33] = &CPU::SWAP_E;
+    CBInstructionTable[0x34] = &CPU::SWAP_H;
+    CBInstructionTable[0x35] = &CPU::SWAP_L;
+    CBInstructionTable[0x36] = &CPU::SWAP_HL;
+    CBInstructionTable[0x37] = &CPU::SWAP_A;
+    CBInstructionTable[0x38] = &CPU::SRL_B;
+    CBInstructionTable[0x39] = &CPU::SRL_C;
+    CBInstructionTable[0x3A] = &CPU::SRL_D;
+    CBInstructionTable[0x3B] = &CPU::SRL_E;
+    CBInstructionTable[0x3C] = &CPU::SRL_H;
+    CBInstructionTable[0x3D] = &CPU::SRL_L;
+    CBInstructionTable[0x3E] = &CPU::SRL_HL;
+    CBInstructionTable[0x3F] = &CPU::SRL_A;
+    CBInstructionTable[0x40] = &CPU::BIT_0_B;
+    CBInstructionTable[0x41] = &CPU::BIT_0_C;
+    CBInstructionTable[0x42] = &CPU::BIT_0_D;
+    CBInstructionTable[0x43] = &CPU::BIT_0_E;
+    CBInstructionTable[0x44] = &CPU::BIT_0_H;
+    CBInstructionTable[0x45] = &CPU::BIT_0_L;
+    CBInstructionTable[0x46] = &CPU::BIT_0_HL;
+    CBInstructionTable[0x47] = &CPU::BIT_0_A;
+    CBInstructionTable[0x48] = &CPU::BIT_1_B;
+    CBInstructionTable[0x49] = &CPU::BIT_1_C;
+    CBInstructionTable[0x4A] = &CPU::BIT_1_D;
+    CBInstructionTable[0x4B] = &CPU::BIT_1_E;
+    CBInstructionTable[0x4C] = &CPU::BIT_1_H;
+    CBInstructionTable[0x4D] = &CPU::BIT_1_L;
+    CBInstructionTable[0x4E] = &CPU::BIT_1_HL;
+    CBInstructionTable[0x4F] = &CPU::BIT_1_A;
+    CBInstructionTable[0x50] = &CPU::BIT_2_B;
+    CBInstructionTable[0x51] = &CPU::BIT_2_C;
+    CBInstructionTable[0x52] = &CPU::BIT_2_D;
+    CBInstructionTable[0x53] = &CPU::BIT_2_E;
+    CBInstructionTable[0x54] = &CPU::BIT_2_H;
+    CBInstructionTable[0x55] = &CPU::BIT_2_L;
+    CBInstructionTable[0x56] = &CPU::BIT_2_HL;
+    CBInstructionTable[0x57] = &CPU::BIT_2_A;
+    CBInstructionTable[0x58] = &CPU::BIT_3_B;
+    CBInstructionTable[0x59] = &CPU::BIT_3_C;
+    CBInstructionTable[0x5A] = &CPU::BIT_3_D;
+    CBInstructionTable[0x5B] = &CPU::BIT_3_E;
+    CBInstructionTable[0x5C] = &CPU::BIT_3_H;
+    CBInstructionTable[0x5D] = &CPU::BIT_3_L;
+    CBInstructionTable[0x5E] = &CPU::BIT_3_HL;
+    CBInstructionTable[0x5F] = &CPU::BIT_3_A;
+    CBInstructionTable[0x60] = &CPU::BIT_4_B;
+    CBInstructionTable[0x61] = &CPU::BIT_4_C;
+    CBInstructionTable[0x62] = &CPU::BIT_4_D;
+    CBInstructionTable[0x63] = &CPU::BIT_4_E;
+    CBInstructionTable[0x64] = &CPU::BIT_4_H;
+    CBInstructionTable[0x65] = &CPU::BIT_4_L;
+    CBInstructionTable[0x66] = &CPU::BIT_4_HL;
+    CBInstructionTable[0x67] = &CPU::BIT_4_A;
+    CBInstructionTable[0x68] = &CPU::BIT_5_B;
+    CBInstructionTable[0x69] = &CPU::BIT_5_C;
+    CBInstructionTable[0x6A] = &CPU::BIT_5_D;
+    CBInstructionTable[0x6B] = &CPU::BIT_5_E;
+    CBInstructionTable[0x6C] = &CPU::BIT_5_H;
+    CBInstructionTable[0x6D] = &CPU::BIT_5_L;
+    CBInstructionTable[0x6E] = &CPU::BIT_5_HL;
+    CBInstructionTable[0x6F] = &CPU::BIT_5_A;
+    CBInstructionTable[0x70] = &CPU::BIT_6_B;
+    CBInstructionTable[0x71] = &CPU::BIT_6_C;
+    CBInstructionTable[0x72] = &CPU::BIT_6_D;
+    CBInstructionTable[0x73] = &CPU::BIT_6_E;
+    CBInstructionTable[0x74] = &CPU::BIT_6_H;
+    CBInstructionTable[0x75] = &CPU::BIT_6_L;
+    CBInstructionTable[0x76] = &CPU::BIT_6_HL;
+    CBInstructionTable[0x77] = &CPU::BIT_6_A;
+    CBInstructionTable[0x78] = &CPU::BIT_7_B;
+    CBInstructionTable[0x79] = &CPU::BIT_7_C;
+    CBInstructionTable[0x7A] = &CPU::BIT_7_D;
+    CBInstructionTable[0x7B] = &CPU::BIT_7_E;
+    CBInstructionTable[0x7C] = &CPU::BIT_7_H;
+    CBInstructionTable[0x7D] = &CPU::BIT_7_L;
+    CBInstructionTable[0x7E] = &CPU::BIT_7_HL;
+    CBInstructionTable[0x7F] = &CPU::BIT_7_A;
+    CBInstructionTable[0x80] = &CPU::RES_0_B;
+    CBInstructionTable[0x81] = &CPU::RES_0_C;
+    CBInstructionTable[0x82] = &CPU::RES_0_D;
+    CBInstructionTable[0x83] = &CPU::RES_0_E;
+    CBInstructionTable[0x84] = &CPU::RES_0_H;
+    CBInstructionTable[0x85] = &CPU::RES_0_L;
+    CBInstructionTable[0x86] = &CPU::RES_0_HL;
+    CBInstructionTable[0x87] = &CPU::RES_0_A;
+    CBInstructionTable[0x88] = &CPU::RES_1_B;
+    CBInstructionTable[0x89] = &CPU::RES_1_C;
+    CBInstructionTable[0x8A] = &CPU::RES_1_D;
+    CBInstructionTable[0x8B] = &CPU::RES_1_E;
+    CBInstructionTable[0x8C] = &CPU::RES_1_H;
+    CBInstructionTable[0x8D] = &CPU::RES_1_L;
+    CBInstructionTable[0x8E] = &CPU::RES_1_HL;
+    CBInstructionTable[0x8F] = &CPU::RES_1_A;
+    CBInstructionTable[0x90] = &CPU::RES_2_B;
+    CBInstructionTable[0x91] = &CPU::RES_2_C;
+    CBInstructionTable[0x92] = &CPU::RES_2_D;
+    CBInstructionTable[0x93] = &CPU::RES_2_E;
+    CBInstructionTable[0x94] = &CPU::RES_2_H;
+    CBInstructionTable[0x95] = &CPU::RES_2_L;
+    CBInstructionTable[0x96] = &CPU::RES_2_HL;
+    CBInstructionTable[0x97] = &CPU::RES_2_A;
+    CBInstructionTable[0x98] = &CPU::RES_3_B;
+    CBInstructionTable[0x99] = &CPU::RES_3_C;
+    CBInstructionTable[0x9A] = &CPU::RES_3_D;
+    CBInstructionTable[0x9B] = &CPU::RES_3_E;
+    CBInstructionTable[0x9C] = &CPU::RES_3_H;
+    CBInstructionTable[0x9D] = &CPU::RES_3_L;
+    CBInstructionTable[0x9E] = &CPU::RES_3_HL;
+    CBInstructionTable[0x9F] = &CPU::RES_3_A;
+    CBInstructionTable[0xA0] = &CPU::RES_4_B;
+    CBInstructionTable[0xA1] = &CPU::RES_4_C;
+    CBInstructionTable[0xA2] = &CPU::RES_4_D;
+    CBInstructionTable[0xA3] = &CPU::RES_4_E;
+    CBInstructionTable[0xA4] = &CPU::RES_4_H;
+    CBInstructionTable[0xA5] = &CPU::RES_4_L;
+    CBInstructionTable[0xA6] = &CPU::RES_4_HL;
+    CBInstructionTable[0xA7] = &CPU::RES_4_A;
+    CBInstructionTable[0xA8] = &CPU::RES_5_B;
+    CBInstructionTable[0xA9] = &CPU::RES_5_C;
+    CBInstructionTable[0xAA] = &CPU::RES_5_D;
+    CBInstructionTable[0xAB] = &CPU::RES_5_E;
+    CBInstructionTable[0xAC] = &CPU::RES_5_H;
+    CBInstructionTable[0xAD] = &CPU::RES_5_L;
+    CBInstructionTable[0xAE] = &CPU::RES_5_HL;
+    CBInstructionTable[0xAF] = &CPU::RES_5_A;
+    CBInstructionTable[0xB0] = &CPU::RES_6_B;
+    CBInstructionTable[0xB1] = &CPU::RES_6_C;
+    CBInstructionTable[0xB2] = &CPU::RES_6_D;
+    CBInstructionTable[0xB3] = &CPU::RES_6_E;
+    CBInstructionTable[0xB4] = &CPU::RES_6_H;
+    CBInstructionTable[0xB5] = &CPU::RES_6_L;
+    CBInstructionTable[0xB6] = &CPU::RES_6_HL;
+    CBInstructionTable[0xB7] = &CPU::RES_6_A;
+    CBInstructionTable[0xB8] = &CPU::RES_7_B;
+    CBInstructionTable[0xB9] = &CPU::RES_7_C;
+    CBInstructionTable[0xBA] = &CPU::RES_7_D;
+    CBInstructionTable[0xBB] = &CPU::RES_7_E;
+    CBInstructionTable[0xBC] = &CPU::RES_7_H;
+    CBInstructionTable[0xBD] = &CPU::RES_7_L;
+    CBInstructionTable[0xBE] = &CPU::RES_7_HL;
+    CBInstructionTable[0xBF] = &CPU::RES_7_A;
+    CBInstructionTable[0xC0] = &CPU::SET_0_B;
+    CBInstructionTable[0xC1] = &CPU::SET_0_C;
+    CBInstructionTable[0xC2] = &CPU::SET_0_D;
+    CBInstructionTable[0xC3] = &CPU::SET_0_E;
+    CBInstructionTable[0xC4] = &CPU::SET_0_H;
+    CBInstructionTable[0xC5] = &CPU::SET_0_L;
+    CBInstructionTable[0xC6] = &CPU::SET_0_HL;
+    CBInstructionTable[0xC7] = &CPU::SET_0_A;
+    CBInstructionTable[0xC8] = &CPU::SET_1_B;
+    CBInstructionTable[0xC9] = &CPU::SET_1_C;
+    CBInstructionTable[0xCA] = &CPU::SET_1_D;
+    CBInstructionTable[0xCB] = &CPU::SET_1_E;
+    CBInstructionTable[0xCC] = &CPU::SET_1_H;
+    CBInstructionTable[0xCD] = &CPU::SET_1_L;
+    CBInstructionTable[0xCE] = &CPU::SET_1_HL;
+    CBInstructionTable[0xCF] = &CPU::SET_1_A;
+    CBInstructionTable[0xD0] = &CPU::SET_2_B;
+    CBInstructionTable[0xD1] = &CPU::SET_2_C;
+    CBInstructionTable[0xD2] = &CPU::SET_2_D;
+    CBInstructionTable[0xD3] = &CPU::SET_2_E;
+    CBInstructionTable[0xD4] = &CPU::SET_2_H;
+    CBInstructionTable[0xD5] = &CPU::SET_2_L;
+    CBInstructionTable[0xD6] = &CPU::SET_2_HL;
+    CBInstructionTable[0xD7] = &CPU::SET_2_A;
+    CBInstructionTable[0xD8] = &CPU::SET_3_B;
+    CBInstructionTable[0xD9] = &CPU::SET_3_C;
+    CBInstructionTable[0xDA] = &CPU::SET_3_D;
+    CBInstructionTable[0xDB] = &CPU::SET_3_E;
+    CBInstructionTable[0xDC] = &CPU::SET_3_H;
+    CBInstructionTable[0xDD] = &CPU::SET_3_L;
+    CBInstructionTable[0xDE] = &CPU::SET_3_HL;
+    CBInstructionTable[0xDF] = &CPU::SET_3_A;
+    CBInstructionTable[0xE0] = &CPU::SET_4_B;
+    CBInstructionTable[0xE1] = &CPU::SET_4_C;
+    CBInstructionTable[0xE2] = &CPU::SET_4_D;
+    CBInstructionTable[0xE3] = &CPU::SET_4_E;
+    CBInstructionTable[0xE4] = &CPU::SET_4_H;
+    CBInstructionTable[0xE5] = &CPU::SET_4_L;
+    CBInstructionTable[0xE6] = &CPU::SET_4_HL;
+    CBInstructionTable[0xE7] = &CPU::SET_4_A;
+    CBInstructionTable[0xE8] = &CPU::SET_5_B;
+    CBInstructionTable[0xE9] = &CPU::SET_5_C;
+    CBInstructionTable[0xEA] = &CPU::SET_5_D;
+    CBInstructionTable[0xEB] = &CPU::SET_5_E;
+    CBInstructionTable[0xEC] = &CPU::SET_5_H;
+    CBInstructionTable[0xED] = &CPU::SET_5_L;
+    CBInstructionTable[0xEE] = &CPU::SET_5_HL;
+    CBInstructionTable[0xEF] = &CPU::SET_5_A;
+    CBInstructionTable[0xF0] = &CPU::SET_6_B;
+    CBInstructionTable[0xF1] = &CPU::SET_6_C;
+    CBInstructionTable[0xF2] = &CPU::SET_6_D;
+    CBInstructionTable[0xF3] = &CPU::SET_6_E;
+    CBInstructionTable[0xF4] = &CPU::SET_6_H;
+    CBInstructionTable[0xF5] = &CPU::SET_6_L;
+    CBInstructionTable[0xF6] = &CPU::SET_6_HL;
+    CBInstructionTable[0xF7] = &CPU::SET_6_A;
+    CBInstructionTable[0xF8] = &CPU::SET_7_B;
+    CBInstructionTable[0xF9] = &CPU::SET_7_C;
+    CBInstructionTable[0xFA] = &CPU::SET_7_D;
+    CBInstructionTable[0xFB] = &CPU::SET_7_E;
+    CBInstructionTable[0xFC] = &CPU::SET_7_H;
+    CBInstructionTable[0xFD] = &CPU::SET_7_L;
+    CBInstructionTable[0xFE] = &CPU::SET_7_HL;
+    CBInstructionTable[0xFF] = &CPU::SET_7_A;
+
     instructionTable[0x00] = &CPU::NoOperation;
     instructionTable[0x10] = &CPU::Stop;
     instructionTable[0x20] = &CPU::JR_NZ_i8;
@@ -255,7 +512,7 @@ CPU::CPU(Memory &memory) : memory(memory)
     instructionTable[0xDA] = &CPU::JP_C_nn;
     instructionTable[0xEA] = &CPU::LD_mem_nn_A;
     instructionTable[0xFA] = &CPU::LD_A_mem_nn;
-    instructionTable[0xCB] = &CPU::INVALID;
+    instructionTable[0xCB] = &CPU::CB;
     instructionTable[0xDB] = &CPU::INVALID;
     instructionTable[0xEB] = &CPU::INVALID;
     instructionTable[0xFB] = &CPU::EI;
@@ -307,15 +564,17 @@ uint8_t CPU::fetchInstruction()
 {
     // Fetch the next instruction from memory
     uint8_t opcode = memory.readByte(PC);
-    // Logger logger;
-    // logger.println("Fetched instruction: " + opcode);
+    std::cout << "PC: " << std::hex << PC << " Opcode: " << std::hex << static_cast<int>(opcode) << std::endl;
 
     return opcode;
 }
 
 void CPU::executeExtendedInstruction(uint8_t opcode)
 {
-    // Extended instruction implementation
+    logStatus();
+
+    InstructionFunc func = CBInstructionTable[opcode];
+    uint8_t cycles = (this->*func)();
 }
 
 void CPU::executeCycle()
@@ -323,17 +582,8 @@ void CPU::executeCycle()
     // Fetch the next instruction
     uint8_t opcode = fetchInstruction();
 
-    // Handle prefixed opcodes
-    if (opcode == 0xCB)
-    {
-        opcode = fetchInstruction();
-        executeExtendedInstruction(opcode);
-    }
-    else
-    {
-        // Decode and execute the instruction
-        executeInstruction(opcode);
-    }
+    // Decode and execute the instruction
+    executeInstruction(opcode);
 
     // Update the timers
     updateTimers();
@@ -383,7 +633,7 @@ void CPU::logStatus()
 
 void CPU::executeInstruction(uint8_t opcode)
 {
-    // logStatus();
+    logStatus();
 
     InstructionFunc func = instructionTable[opcode];
     uint8_t cycles = (this->*func)();

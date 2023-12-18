@@ -114,7 +114,7 @@ int main()
   std::cout << "Reading ROM file..." << std::endl;
 
   // Read ROM file into memory
-  if (fileReader->open("roms/07-jr,jp,call,ret,rst.gb"))
+  if (fileReader->open("roms/04-op r,imm.gb"))
   {
     char *buffer = new char[0x8000];
 
