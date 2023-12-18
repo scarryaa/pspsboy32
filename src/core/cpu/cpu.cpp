@@ -564,17 +564,23 @@ uint8_t CPU::fetchInstruction()
 {
     // Fetch the next instruction from memory
     uint8_t opcode = memory.readByte(PC);
-    std::cout << "PC: " << std::hex << PC << " Opcode: " << std::hex << static_cast<int>(opcode) << std::endl;
+    // std::cout << "PC: " << std::hex << PC << " Opcode: " << std::hex << static_cast<int>(opcode) << std::endl;
+    // print every twenty five thousandth line
+    // if (debugCounter % 25000 == 0)
+    // {
+    //     std::cout << "line: " << debugCounter << std::endl;
+    // }
+    debugCounter++;
 
     return opcode;
 }
 
-void CPU::executeExtendedInstruction(uint8_t opcode)
+uint8_t CPU::executeExtendedInstruction(uint8_t opcode)
 {
-    logStatus();
-
+    // std::cout << "Executing extended instruction: " << std::hex << static_cast<int>(opcode) << std::endl;
     InstructionFunc func = CBInstructionTable[opcode];
     uint8_t cycles = (this->*func)();
+    return cycles;
 }
 
 void CPU::executeCycle()
@@ -633,7 +639,7 @@ void CPU::logStatus()
 
 void CPU::executeInstruction(uint8_t opcode)
 {
-    logStatus();
+    // logStatus();
 
     InstructionFunc func = instructionTable[opcode];
     uint8_t cycles = (this->*func)();

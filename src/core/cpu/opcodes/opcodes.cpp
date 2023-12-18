@@ -330,45 +330,30 @@ uint8_t CPU::RLA()
     return 4;
 }
 
-// 0x27
+// 0x27 DAA
 uint8_t CPU::DAA()
 {
-    uint8_t correction = 0x00;
-    bool setCarry = false;
+    int correction = 0;
+    int set_flags = 0;
 
-    if (!GET_FLAG_N(CPU::F))
+    // Check half-carry or if lower nibble of A is greater than 9
+    if ((GET_FLAG_H(CPU::F)) || (!(GET_FLAG_N(CPU::F)) && (A & 0x0F) > 9))
+        correction |= 0x06;
+
+    // Check carry or if A is greater than 99
+    if ((GET_FLAG_C(CPU::F)) || (!(GET_FLAG_N(CPU::F)) && A > 0x99))
     {
-        if (GET_FLAG_H(CPU::F) || (A & 0x0F) > 0x09)
-        {
-            correction |= 0x06;
-        }
-
-        if (GET_FLAG_C(CPU::F) || A > 0x99)
-        {
-            correction |= 0x60;
-            setCarry = true;
-        }
-
-        A += correction;
-    }
-    else
-    {
-        if (GET_FLAG_H(CPU::F))
-        {
-            correction |= 0x06;
-        }
-
-        if (GET_FLAG_C(CPU::F))
-        {
-            correction |= 0x60;
-        }
-
-        A -= correction;
+        correction |= 0x60;
+        set_flags |= GET_FLAG_C(CPU::F);
     }
 
-    SET_FLAG_Z(CPU::F, A == 0);
+    // Adjust A based on the subtraction flag
+    A += (GET_FLAG_N(CPU::F)) ? -correction : correction;
+
+    // Set or reset flags based on results
+    SET_FLAG_Z(CPU::F, (A == 0));
     SET_FLAG_H(CPU::F, false);
-    SET_FLAG_C(CPU::F, setCarry);
+    SET_FLAG_C(CPU::F, (set_flags & GET_FLAG_C(CPU::F)));
 
     PC += 1;
     return 4;
@@ -491,11 +476,13 @@ uint8_t CPU::LD_A_mem_DE()
 }
 
 // helper function for 0x2A, 0x3A
-uint8_t CPU::LD_A_mem_HL_inc_dec(uint8_t inc)
+uint8_t CPU::LD_A_mem_HL_inc_dec(int8_t inc)
 {
     uint16_t HL = (H << 8) | L;
     A = memory.readByte(HL);
-    HL += inc;
+
+    HL = static_cast<uint16_t>(HL + inc);
+
     H = (HL >> 8) & 0xFF;
     L = HL & 0xFF;
     PC += 1;
@@ -1721,7 +1708,11 @@ uint8_t CPU::POP_HL()
 // 0xF1
 uint8_t CPU::POP_AF()
 {
-    return POP_RR(A, F);
+    uint8_t cycles = POP_RR(A, F);
+
+    F &= 0xF0;
+
+    return cycles;
 }
 
 // helper function for 0xC2, 0xD2
@@ -2045,10 +2036,12 @@ uint8_t CPU::LD_A_mem_nn()
 // helper function for 0xCB
 uint8_t CPU::CB()
 {
-    uint8_t opcode = memory.readByte(PC + 1);
-    PC += 2;
-    executeExtendedInstruction(opcode);
-    return 4;
+    PC += 1;
+    uint8_t opcode = memory.readByte(PC);
+    PC += 1;
+    uint8_t cycles = executeExtendedInstruction(opcode);
+
+    return cycles;
 }
 
 // 0xFB
@@ -2088,6 +2081,7 @@ uint8_t CPU::CALL_nn()
 uint8_t CPU::ADC_A_d8()
 {
     uint8_t value = memory.readByte(PC + 1);
+    PC++;
     return ADC_A_R(value);
 }
 
@@ -2095,6 +2089,7 @@ uint8_t CPU::ADC_A_d8()
 uint8_t CPU::SBC_A_d8()
 {
     uint8_t value = memory.readByte(PC + 1);
+    PC++;
     return SBC_A_R(value);
 }
 
@@ -2102,6 +2097,7 @@ uint8_t CPU::SBC_A_d8()
 uint8_t CPU::XOR_A_d8()
 {
     uint8_t value = memory.readByte(PC + 1);
+    PC++;
     return XOR_A_R(value);
 }
 

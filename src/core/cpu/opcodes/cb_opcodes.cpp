@@ -13,7 +13,6 @@ uint8_t CPU::RLC_R(uint8_t &reg)
 
     reg = result;
 
-    PC += 2;
     return 8;
 }
 
@@ -62,7 +61,7 @@ uint8_t CPU::RLC_A()
 // 0x06
 uint8_t CPU::RLC_HL()
 {
-    uint8_t value = memory.readByte(HL);
+    uint8_t value = memory.readByte(H << 8 | L);
     uint8_t result = value << 1;
     result |= (value >> 7);
 
@@ -71,9 +70,8 @@ uint8_t CPU::RLC_HL()
     SET_FLAG_H(CPU::F, false);
     SET_FLAG_C(CPU::F, (value >> 7) == 1);
 
-    memory.writeByte(HL, result);
+    memory.writeByte(H << 8 | L, result);
 
-    PC += 2;
     return 16;
 }
 
@@ -90,7 +88,6 @@ uint8_t CPU::RRC_R(uint8_t &reg)
 
     reg = result;
 
-    PC += 2;
     return 8;
 }
 
@@ -139,7 +136,7 @@ uint8_t CPU::RRC_A()
 // 0x0E
 uint8_t CPU::RRC_HL()
 {
-    uint8_t value = memory.readByte(HL);
+    uint8_t value = memory.readByte(H << 8 | L);
     uint8_t result = value >> 1;
     result |= (value << 7);
 
@@ -148,26 +145,23 @@ uint8_t CPU::RRC_HL()
     SET_FLAG_H(CPU::F, false);
     SET_FLAG_C(CPU::F, (value & 0x01) == 1);
 
-    memory.writeByte(HL, result);
+    memory.writeByte(H << 8 | L, result);
 
-    PC += 2;
     return 16;
 }
 
 // cb helper function for 0x10 - 0x17 (minus 0x16)
 uint8_t CPU::RL_R(uint8_t &reg)
 {
-    uint8_t result = reg << 1;
-    result |= (reg >> 7);
+    uint8_t carry = GET_FLAG_C(CPU::F);
+    SET_FLAG_C(CPU::F, (reg & 0x80) != 0);
 
-    SET_FLAG_Z(CPU::F, result == 0);
+    reg = (reg << 1) | carry;
+
+    SET_FLAG_Z(CPU::F, reg == 0);
     SET_FLAG_N(CPU::F, false);
     SET_FLAG_H(CPU::F, false);
-    SET_FLAG_C(CPU::F, (reg >> 7) == 1);
 
-    reg = result;
-
-    PC += 2;
     return 8;
 }
 
@@ -216,35 +210,33 @@ uint8_t CPU::RL_A()
 // 0x16
 uint8_t CPU::RL_HL()
 {
-    uint8_t value = memory.readByte(HL);
-    uint8_t result = value << 1;
-    result |= (value >> 7);
+    uint16_t address = (H << 8) | L;
+    uint8_t value = memory.readByte(address);
+
+    uint8_t oldBit7 = value >> 7;
+    uint8_t result = (value << 1) | GET_FLAG_C(CPU::F);
 
     SET_FLAG_Z(CPU::F, result == 0);
     SET_FLAG_N(CPU::F, false);
     SET_FLAG_H(CPU::F, false);
-    SET_FLAG_C(CPU::F, (value >> 7) == 1);
+    SET_FLAG_C(CPU::F, oldBit7 == 1);
 
-    memory.writeByte(HL, result);
+    memory.writeByte(address, result);
 
-    PC += 2;
     return 16;
 }
 
 // cb helper function for 0x18 - 0x1F (minus 0x1E)
 uint8_t CPU::RR_R(uint8_t &reg)
 {
-    uint8_t result = reg >> 1;
-    result |= (reg << 7);
+    uint8_t oldBit0 = reg & 0x01;
+    reg = (reg >> 1) | (GET_FLAG_C(CPU::F) << 7);
 
-    SET_FLAG_Z(CPU::F, result == 0);
+    SET_FLAG_Z(CPU::F, reg == 0);
     SET_FLAG_N(CPU::F, false);
     SET_FLAG_H(CPU::F, false);
-    SET_FLAG_C(CPU::F, (reg & 0x01) == 1);
+    SET_FLAG_C(CPU::F, oldBit0);
 
-    reg = result;
-
-    PC += 2;
     return 8;
 }
 
@@ -293,18 +285,19 @@ uint8_t CPU::RR_A()
 // 0x1E
 uint8_t CPU::RR_HL()
 {
-    uint8_t value = memory.readByte(HL);
-    uint8_t result = value >> 1;
-    result |= (value << 7);
+    uint16_t address = (H << 8) | L;
+    uint8_t value = memory.readByte(address);
+
+    uint8_t oldBit0 = value & 0x01;
+    uint8_t result = (value >> 1) | (GET_FLAG_C(CPU::F) << 7);
 
     SET_FLAG_Z(CPU::F, result == 0);
     SET_FLAG_N(CPU::F, false);
     SET_FLAG_H(CPU::F, false);
-    SET_FLAG_C(CPU::F, (value & 0x01) == 1);
+    SET_FLAG_C(CPU::F, oldBit0);
 
-    memory.writeByte(HL, result);
+    memory.writeByte(address, result);
 
-    PC += 2;
     return 16;
 }
 
@@ -320,7 +313,6 @@ uint8_t CPU::SLA_R(uint8_t &reg)
 
     reg = result;
 
-    PC += 2;
     return 8;
 }
 
@@ -369,7 +361,7 @@ uint8_t CPU::SLA_A()
 // 0x26
 uint8_t CPU::SLA_HL()
 {
-    uint8_t value = memory.readByte(HL);
+    uint8_t value = memory.readByte(H << 8 | L);
     uint8_t result = value << 1;
 
     SET_FLAG_Z(CPU::F, result == 0);
@@ -377,26 +369,26 @@ uint8_t CPU::SLA_HL()
     SET_FLAG_H(CPU::F, false);
     SET_FLAG_C(CPU::F, (value >> 7) == 1);
 
-    memory.writeByte(HL, result);
+    memory.writeByte(H << 8 | L, result);
 
-    PC += 2;
     return 16;
 }
 
 // cb helper function for 0x28 - 0x2F (minus 0x2E)
 uint8_t CPU::SRA_R(uint8_t &reg)
 {
-    uint8_t result = reg >> 1;
-    result |= (reg & 0x80);
+    SET_FLAG_C(CPU::F, (reg & 0x01) != 0);
+
+    // Preserve the most significant bit (bit 7) and shift right
+    uint8_t msb = reg & 0x80;
+    uint8_t result = (reg >> 1) | msb;
 
     SET_FLAG_Z(CPU::F, result == 0);
     SET_FLAG_N(CPU::F, false);
     SET_FLAG_H(CPU::F, false);
-    SET_FLAG_C(CPU::F, (reg & 0x01) == 1);
 
     reg = result;
 
-    PC += 2;
     return 8;
 }
 
@@ -445,18 +437,19 @@ uint8_t CPU::SRA_A()
 // 0x2E
 uint8_t CPU::SRA_HL()
 {
-    uint8_t value = memory.readByte(HL);
-    uint8_t result = value >> 1;
-    result |= (value & 0x80);
+    uint8_t value = memory.readByte(H << 8 | L);
+    SET_FLAG_C(CPU::F, (value & 0x01) != 0);
+
+    // Preserve the most significant bit (bit 7) and shift right
+    uint8_t msb = value & 0x80;
+    uint8_t result = (value >> 1) | msb;
 
     SET_FLAG_Z(CPU::F, result == 0);
     SET_FLAG_N(CPU::F, false);
     SET_FLAG_H(CPU::F, false);
-    SET_FLAG_C(CPU::F, (value & 0x01) == 1);
 
-    memory.writeByte(HL, result);
+    memory.writeByte(H << 8 | L, result);
 
-    PC += 2;
     return 16;
 }
 
@@ -472,7 +465,6 @@ uint8_t CPU::SWAP_R(uint8_t &reg)
 
     reg = result;
 
-    PC += 2;
     return 8;
 }
 
@@ -521,7 +513,7 @@ uint8_t CPU::SWAP_A()
 // 0x36
 uint8_t CPU::SWAP_HL()
 {
-    uint8_t value = memory.readByte(HL);
+    uint8_t value = memory.readByte(H << 8 | L);
     uint8_t result = ((value & 0x0F) << 4) | ((value & 0xF0) >> 4);
 
     SET_FLAG_Z(CPU::F, result == 0);
@@ -529,25 +521,24 @@ uint8_t CPU::SWAP_HL()
     SET_FLAG_H(CPU::F, false);
     SET_FLAG_C(CPU::F, false);
 
-    memory.writeByte(HL, result);
+    memory.writeByte(H << 8 | L, result);
 
-    PC += 2;
     return 16;
 }
 
 // cb helper function for 0x38 - 0x3F (minus 0x3E)
 uint8_t CPU::SRL_R(uint8_t &reg)
 {
+    SET_FLAG_C(CPU::F, (reg & 0x01) != 0);
+
     uint8_t result = reg >> 1;
 
     SET_FLAG_Z(CPU::F, result == 0);
     SET_FLAG_N(CPU::F, false);
     SET_FLAG_H(CPU::F, false);
-    SET_FLAG_C(CPU::F, (reg & 0x01) == 1);
 
     reg = result;
 
-    PC += 2;
     return 8;
 }
 
@@ -596,17 +587,17 @@ uint8_t CPU::SRL_A()
 // 0x3E
 uint8_t CPU::SRL_HL()
 {
-    uint8_t value = memory.readByte(HL);
+    uint8_t value = memory.readByte(H << 8 | L);
+    SET_FLAG_C(CPU::F, (value & 0x01) != 0);
+
     uint8_t result = value >> 1;
 
     SET_FLAG_Z(CPU::F, result == 0);
     SET_FLAG_N(CPU::F, false);
     SET_FLAG_H(CPU::F, false);
-    SET_FLAG_C(CPU::F, (value & 0x01) == 1);
 
-    memory.writeByte(HL, result);
+    memory.writeByte(H << 8 | L, result);
 
-    PC += 2;
     return 16;
 }
 
@@ -617,7 +608,6 @@ uint8_t CPU::BIT_b_R(uint8_t bit, uint8_t reg)
     SET_FLAG_N(CPU::F, false);
     SET_FLAG_H(CPU::F, true);
 
-    PC += 2;
     return 8;
 }
 
@@ -666,7 +656,7 @@ uint8_t CPU::BIT_0_A()
 // 0x46
 uint8_t CPU::BIT_0_HL()
 {
-    uint8_t value = memory.readByte(HL);
+    uint8_t value = memory.readByte(H << 8 | L);
     return BIT_b_R(0, value);
 }
 
@@ -715,7 +705,7 @@ uint8_t CPU::BIT_1_A()
 // 0x4E
 uint8_t CPU::BIT_1_HL()
 {
-    uint8_t value = memory.readByte(HL);
+    uint8_t value = memory.readByte(H << 8 | L);
     return BIT_b_R(1, value);
 }
 
@@ -764,7 +754,7 @@ uint8_t CPU::BIT_2_A()
 // 0x56
 uint8_t CPU::BIT_2_HL()
 {
-    uint8_t value = memory.readByte(HL);
+    uint8_t value = memory.readByte(H << 8 | L);
     return BIT_b_R(2, value);
 }
 
@@ -813,7 +803,7 @@ uint8_t CPU::BIT_3_A()
 // 0x5E
 uint8_t CPU::BIT_3_HL()
 {
-    uint8_t value = memory.readByte(HL);
+    uint8_t value = memory.readByte(H << 8 | L);
     return BIT_b_R(3, value);
 }
 
@@ -862,7 +852,7 @@ uint8_t CPU::BIT_4_A()
 // 0x66
 uint8_t CPU::BIT_4_HL()
 {
-    uint8_t value = memory.readByte(HL);
+    uint8_t value = memory.readByte(H << 8 | L);
     return BIT_b_R(4, value);
 }
 
@@ -911,7 +901,7 @@ uint8_t CPU::BIT_5_A()
 // 0x6E
 uint8_t CPU::BIT_5_HL()
 {
-    uint8_t value = memory.readByte(HL);
+    uint8_t value = memory.readByte(H << 8 | L);
     return BIT_b_R(5, value);
 }
 
@@ -960,7 +950,7 @@ uint8_t CPU::BIT_6_A()
 // 0x76
 uint8_t CPU::BIT_6_HL()
 {
-    uint8_t value = memory.readByte(HL);
+    uint8_t value = memory.readByte(H << 8 | L);
     return BIT_b_R(6, value);
 }
 
@@ -1009,7 +999,7 @@ uint8_t CPU::BIT_7_A()
 // 0x7E
 uint8_t CPU::BIT_7_HL()
 {
-    uint8_t value = memory.readByte(HL);
+    uint8_t value = memory.readByte(H << 8 | L);
     return BIT_b_R(7, value);
 }
 
@@ -1018,7 +1008,6 @@ uint8_t CPU::RES_b_R(uint8_t bit, uint8_t &reg)
 {
     reg &= ~(1 << bit);
 
-    PC += 2;
     return 8;
 }
 
@@ -1067,8 +1056,10 @@ uint8_t CPU::RES_0_A()
 // 0x86
 uint8_t CPU::RES_0_HL()
 {
-    uint8_t value = memory.readByte(HL);
-    return RES_b_R(0, value);
+    uint8_t value = memory.readByte(H << 8 | L);
+    uint8_t cycles = RES_b_R(0, value);
+    memory.writeByte(H << 8 | L, value);
+    return cycles + 8;
 }
 
 // 0x88
@@ -1116,8 +1107,10 @@ uint8_t CPU::RES_1_A()
 // 0x8E
 uint8_t CPU::RES_1_HL()
 {
-    uint8_t value = memory.readByte(HL);
-    return RES_b_R(1, value);
+    uint8_t value = memory.readByte(H << 8 | L);
+    uint8_t cycles = RES_b_R(1, value);
+    memory.writeByte(H << 8 | L, value);
+    return cycles;
 }
 
 // 0x90
@@ -1165,8 +1158,10 @@ uint8_t CPU::RES_2_A()
 // 0x96
 uint8_t CPU::RES_2_HL()
 {
-    uint8_t value = memory.readByte(HL);
-    return RES_b_R(2, value);
+    uint8_t value = memory.readByte(H << 8 | L);
+    uint8_t cycles = RES_b_R(2, value);
+    memory.writeByte(H << 8 | L, value);
+    return cycles;
 }
 
 // 0x98
@@ -1214,8 +1209,10 @@ uint8_t CPU::RES_3_A()
 // 0x9E
 uint8_t CPU::RES_3_HL()
 {
-    uint8_t value = memory.readByte(HL);
-    return RES_b_R(3, value);
+    uint8_t value = memory.readByte(H << 8 | L);
+    uint8_t cycles = RES_b_R(3, value);
+    memory.writeByte(H << 8 | L, value);
+    return cycles;
 }
 
 // 0xA0
@@ -1263,8 +1260,10 @@ uint8_t CPU::RES_4_A()
 // 0xA6
 uint8_t CPU::RES_4_HL()
 {
-    uint8_t value = memory.readByte(HL);
-    return RES_b_R(4, value);
+    uint8_t value = memory.readByte(H << 8 | L);
+    uint8_t cycles = RES_b_R(4, value);
+    memory.writeByte(H << 8 | L, value);
+    return cycles;
 }
 
 // 0xA8
@@ -1312,8 +1311,10 @@ uint8_t CPU::RES_5_A()
 // 0xAE
 uint8_t CPU::RES_5_HL()
 {
-    uint8_t value = memory.readByte(HL);
-    return RES_b_R(5, value);
+    uint8_t value = memory.readByte(H << 8 | L);
+    uint8_t cycles = RES_b_R(5, value);
+    memory.writeByte(H << 8 | L, value);
+    return cycles;
 }
 
 // 0xB0
@@ -1361,8 +1362,10 @@ uint8_t CPU::RES_6_A()
 // 0xB6
 uint8_t CPU::RES_6_HL()
 {
-    uint8_t value = memory.readByte(HL);
-    return RES_b_R(6, value);
+    uint8_t value = memory.readByte(H << 8 | L);
+    uint8_t cycles = RES_b_R(6, value);
+    memory.writeByte(H << 8 | L, value);
+    return cycles;
 }
 
 // 0xB8
@@ -1410,8 +1413,10 @@ uint8_t CPU::RES_7_A()
 // 0xBE
 uint8_t CPU::RES_7_HL()
 {
-    uint8_t value = memory.readByte(HL);
-    return RES_b_R(7, value);
+    uint8_t value = memory.readByte(H << 8 | L);
+    uint8_t cycles = RES_b_R(7, value);
+    memory.writeByte(H << 8 | L, value);
+    return cycles;
 }
 
 // cb helper function for 0xC0 - 0xFF
@@ -1419,7 +1424,6 @@ uint8_t CPU::SET_b_R(uint8_t bit, uint8_t &reg)
 {
     reg |= (1 << bit);
 
-    PC += 2;
     return 8;
 }
 
@@ -1468,8 +1472,10 @@ uint8_t CPU::SET_0_A()
 // 0xC6
 uint8_t CPU::SET_0_HL()
 {
-    uint8_t value = memory.readByte(HL);
-    return SET_b_R(0, value);
+    uint8_t value = memory.readByte(H << 8 | L);
+    uint8_t cycles = SET_b_R(0, value);
+    memory.writeByte(H << 8 | L, value);
+    return cycles;
 }
 
 // 0xC8
@@ -1517,8 +1523,10 @@ uint8_t CPU::SET_1_A()
 // 0xCE
 uint8_t CPU::SET_1_HL()
 {
-    uint8_t value = memory.readByte(HL);
-    return SET_b_R(1, value);
+    uint8_t value = memory.readByte(H << 8 | L);
+    uint8_t cycles = SET_b_R(1, value);
+    memory.writeByte(H << 8 | L, value);
+    return cycles;
 }
 
 // 0xD0
@@ -1566,8 +1574,10 @@ uint8_t CPU::SET_2_A()
 // 0xD6
 uint8_t CPU::SET_2_HL()
 {
-    uint8_t value = memory.readByte(HL);
-    return SET_b_R(2, value);
+    uint8_t value = memory.readByte(H << 8 | L);
+    uint8_t cycles = SET_b_R(2, value);
+    memory.writeByte(H << 8 | L, value);
+    return cycles;
 }
 
 // 0xD8
@@ -1615,8 +1625,10 @@ uint8_t CPU::SET_3_A()
 // 0xDE
 uint8_t CPU::SET_3_HL()
 {
-    uint8_t value = memory.readByte(HL);
-    return SET_b_R(3, value);
+    uint8_t value = memory.readByte(H << 8 | L);
+    uint8_t cycles = SET_b_R(3, value);
+    memory.writeByte(H << 8 | L, value);
+    return cycles;
 }
 
 // 0xE0
@@ -1664,8 +1676,10 @@ uint8_t CPU::SET_4_A()
 // 0xE6
 uint8_t CPU::SET_4_HL()
 {
-    uint8_t value = memory.readByte(HL);
-    return SET_b_R(4, value);
+    uint8_t value = memory.readByte(H << 8 | L);
+    uint8_t cycles = SET_b_R(4, value);
+    memory.writeByte(H << 8 | L, value);
+    return cycles;
 }
 
 // 0xE8
@@ -1713,8 +1727,10 @@ uint8_t CPU::SET_5_A()
 // 0xEE
 uint8_t CPU::SET_5_HL()
 {
-    uint8_t value = memory.readByte(HL);
-    return SET_b_R(5, value);
+    uint8_t value = memory.readByte(H << 8 | L);
+    uint8_t cycles = SET_b_R(5, value);
+    memory.writeByte(H << 8 | L, value);
+    return cycles;
 }
 
 // 0xF0
@@ -1762,8 +1778,10 @@ uint8_t CPU::SET_6_A()
 // 0xF6
 uint8_t CPU::SET_6_HL()
 {
-    uint8_t value = memory.readByte(HL);
-    return SET_b_R(6, value);
+    uint8_t value = memory.readByte(H << 8 | L);
+    uint8_t cycles = SET_b_R(6, value);
+    memory.writeByte(H << 8 | L, value);
+    return cycles;
 }
 
 // 0xF8
@@ -1811,6 +1829,8 @@ uint8_t CPU::SET_7_A()
 // 0xFE
 uint8_t CPU::SET_7_HL()
 {
-    uint8_t value = memory.readByte(HL);
-    return SET_b_R(7, value);
+    uint8_t value = memory.readByte(H << 8 | L);
+    uint8_t cycles = SET_b_R(7, value);
+    memory.writeByte(H << 8 | L, value);
+    return cycles;
 }

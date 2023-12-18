@@ -47,7 +47,8 @@ public:
     bool checkFlag();
     void updateTimers();
     uint8_t fetchInstruction();
-    void executeExtendedInstruction(uint8_t opcode);
+    uint8_t executeExtendedInstruction(uint8_t opcode);
+    uint32_t debugCounter = 0;
 
     // Stop flag
     static bool stopped;
@@ -358,7 +359,7 @@ public:
     // helper function for 0x0A, 0x1A
     uint8_t LD_A_mem_RR(uint8_t reg1, uint8_t reg2);
     // helper function for 0x2A, 0x3A
-    uint8_t LD_A_mem_HL_inc_dec(uint8_t inc);
+    uint8_t LD_A_mem_HL_inc_dec(int8_t inc);
     // helper function for 0x0B, 0x1B, 0x2B
     uint8_t DEC_RR(uint8_t &reg1, uint8_t &reg2);
     // helper function for 0x0C, 0x1C, 0x2C, 0x3C

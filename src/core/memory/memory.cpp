@@ -114,9 +114,14 @@ void Memory::writeByte(uint16_t address, uint8_t value)
     {
         // Write to SC (Serial transfer control)
         ioRegisters[0x02] = value;
+
+        // Check if a transfer is initiated (0x81 written to SC)
         if (value == 0x81)
         {
-            logger.print(ioRegisters[0x01]);
+            // Print the value in SB as it's being 'transferred' in hex
+            logger.println(ioRegisters[0x01]);
+            logger.print(" ");
+            ioRegisters[0x02] = 0;
         }
     }
 
