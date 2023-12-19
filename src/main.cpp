@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
   std::cout << "Reading ROM file..." << std::endl;
 
   // Read ROM file into memory
-  if (fileReader->open("roms/02-interrupts.gb"))
+  if (fileReader->open("roms/Dr. Mario (World).gb"))
   {
     char *buffer = new char[0x8000];
 
@@ -161,6 +161,14 @@ int main(int argc, char *argv[])
   // Main loop
   bool running = true;
   SDL_Event e;
+  SDL_Texture *emulatorTexture = SDL_CreateTexture(
+      renderer,
+      SDL_PIXELFORMAT_RGB24,
+      SDL_TEXTUREACCESS_STREAMING,
+      160, // Frame buffer width
+      144  // Frame buffer height
+  );
+
   while (running)
   {
     while (SDL_PollEvent(&e) != 0)
@@ -175,17 +183,27 @@ int main(int argc, char *argv[])
     // Update emulator core
     core.update();
 
-    // Clear screen
-    SDL_RenderClear(renderer);
+    if (core.isFrameReady())
+    {
+      // Update texture with the frame buffer data
+      SDL_UpdateTexture(emulatorTexture, nullptr, core.getFrameBuffer(), 160 * 3);
 
-    // Render the emulator screen buffer to the window
-    // SDL_RenderCopy(renderer, emulatorTexture, nullptr, nullptr);
+      // Clear screen
+      SDL_RenderClear(renderer);
 
-    // Update screen
-    SDL_RenderPresent(renderer);
+      // Render the emulator screen buffer to the window
+      SDL_RenderCopy(renderer, emulatorTexture, nullptr, nullptr);
+
+      // Update screen
+      SDL_RenderPresent(renderer);
+
+      // Reset the frame ready flag in the core
+      core.resetFrameReady();
+    }
   }
 
   // Cleanup
+  SDL_DestroyTexture(emulatorTexture);
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
   SDL_Quit();

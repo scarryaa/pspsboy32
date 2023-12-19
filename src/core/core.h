@@ -14,8 +14,11 @@ public:
 
     void init();
     void update();
-    void render();
     void shutdown();
+    uint8_t *getFrameBuffer();
+
+    bool isFrameReady();
+    void resetFrameReady();
 
     void reset();
     void loadRom(char *data, size_t size);

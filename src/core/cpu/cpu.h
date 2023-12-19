@@ -40,7 +40,7 @@ public:
     ~CPU();
 
     void reset();
-    void executeCycle();
+    uint8_t executeCycle();
 
     void handleInterrupts();
     void setFlag();

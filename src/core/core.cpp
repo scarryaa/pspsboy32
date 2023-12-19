@@ -16,14 +16,31 @@ void Core::init()
 
 void Core::update()
 {
-    cpu.executeCycle();
-    ppu.update(1);
+    int cyclesThisUpdate = 0;
+
+    // CPU executes one instruction, which could take multiple cycles
+    cyclesThisUpdate += cpu.executeCycle();
+
+    // Update PPU with the number of cycles that have passed
+    ppu.update(cyclesThisUpdate);
+
+    // Update other subsystems if needed
     input.update();
 }
 
-void Core::render()
+uint8_t *Core::getFrameBuffer()
 {
-    ppu.update(1);
+    return ppu.getFrameBuffer();
+}
+
+bool Core::isFrameReady()
+{
+    return ppu.isFrameReady();
+}
+
+void Core::resetFrameReady()
+{
+    ppu.resetFrameReady();
 }
 
 void Core::shutdown()

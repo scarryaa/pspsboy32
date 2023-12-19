@@ -593,7 +593,7 @@ uint8_t CPU::executeExtendedInstruction(uint8_t opcode)
     return cycles;
 }
 
-void CPU::executeCycle()
+uint8_t CPU::executeCycle()
 {
     uint8_t cycles = 0;
 
@@ -617,6 +617,8 @@ void CPU::executeCycle()
     }
 
     updateTimers(cycles);
+
+    return cycles;
 }
 
 void CPU::handleInterrupts()
