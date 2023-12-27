@@ -25,15 +25,18 @@ uint8_t CPU::Stop()
 // helper function for 0x20, 0x30, 0x28, 0x38
 uint8_t CPU::JR_i8(uint8_t condition)
 {
-    PC += 2;
+    int8_t offset = static_cast<int8_t>(memory.readByte(PC + 1));
+
     if (condition)
     {
-        int8_t offset = static_cast<int8_t>(memory.readByte(PC - 1));
-        PC += offset;
+        PC += offset + 2;
         return 12;
     }
-
-    return 8;
+    else
+    {
+        PC += 2;
+        return 8;
+    }
 }
 
 // 0x20
@@ -121,7 +124,13 @@ uint8_t CPU::LD_mem_HL_inc_A()
 uint8_t CPU::LD_mem_HL_dec_A()
 {
     memory.writeByte((H << 8) | L, A);
-    L -= 1;
+
+    if (L == 0)
+    {
+        H--;
+    }
+    L--;
+
     PC += 1;
     return 8;
 }
@@ -131,8 +140,10 @@ uint8_t CPU::INC_RR(uint8_t &reg1, uint8_t &reg2)
 {
     uint16_t reg = (reg1 << 8) | reg2;
     reg += 1;
+
     reg1 = (reg >> 8) & 0xFF;
     reg2 = reg & 0xFF;
+
     PC += 1;
     return 8;
 }
@@ -163,14 +174,13 @@ uint8_t CPU::INC_SP()
     return 8;
 }
 
-// 0x04
 uint8_t CPU::INC_B()
 {
     B += 1;
 
     SET_FLAG_Z(CPU::F, B == 0);
     SET_FLAG_N(CPU::F, false);
-    SET_FLAG_H(CPU::F, ((B - 1) & 0x0F) == 0x0F);
+    SET_FLAG_H(CPU::F, (B & 0x0F) == 0);
 
     PC += 1;
     return 4;
@@ -183,7 +193,7 @@ uint8_t CPU::INC_D()
 
     SET_FLAG_Z(CPU::F, D == 0);
     SET_FLAG_N(CPU::F, false);
-    SET_FLAG_H(CPU::F, ((D - 1) & 0x0F) == 0x0F);
+    SET_FLAG_H(CPU::F, (D & 0x0F) == 0);
 
     PC += 1;
     return 4;
@@ -196,7 +206,8 @@ uint8_t CPU::INC_H()
 
     SET_FLAG_Z(CPU::F, H == 0);
     SET_FLAG_N(CPU::F, false);
-    SET_FLAG_H(CPU::F, ((H - 1) & 0x0F) == 0x0F);
+
+    SET_FLAG_H(CPU::F, (H & 0x0F) == 0);
 
     PC += 1;
     return 4;
@@ -212,7 +223,7 @@ uint8_t CPU::INC_mem_HL()
 
     SET_FLAG_Z(CPU::F, value == 0);
     SET_FLAG_N(CPU::F, false);
-    SET_FLAG_H(CPU::F, ((value - 1) & 0x0F) == 0x0F);
+    SET_FLAG_H(CPU::F, (value & 0x0F) == 0);
 
     PC += 1;
     return 12;
@@ -221,11 +232,12 @@ uint8_t CPU::INC_mem_HL()
 // helper function for 0x05, 0x15, 0x25, 0x35
 uint8_t CPU::DEC_R(uint8_t &reg)
 {
+    SET_FLAG_H(CPU::F, (reg & 0x0F) == 0);
+
     reg -= 1;
 
     SET_FLAG_Z(CPU::F, reg == 0);
     SET_FLAG_N(CPU::F, true);
-    SET_FLAG_H(CPU::F, ((reg + 1) & 0x0F) == 0);
 
     PC += 1;
     return 4;
@@ -249,7 +261,6 @@ uint8_t CPU::DEC_H()
     return DEC_R(H);
 }
 
-// 0x35
 uint8_t CPU::DEC_mem_HL()
 {
     uint16_t HL = (H << 8) | L;
@@ -259,7 +270,7 @@ uint8_t CPU::DEC_mem_HL()
 
     SET_FLAG_Z(CPU::F, newValue == 0);
     SET_FLAG_N(CPU::F, true);
-    SET_FLAG_H(CPU::F, ((value & 0x0F) == 0));
+    SET_FLAG_H(CPU::F, (value & 0x0F) == 0);
 
     PC += 1;
     return 12;
@@ -349,6 +360,7 @@ uint8_t CPU::DAA()
 
     // Adjust A based on the subtraction flag
     A += (GET_FLAG_N(CPU::F)) ? -correction : correction;
+    SET_FLAG_N(CPU::F, false);
 
     // Set or reset flags based on results
     SET_FLAG_Z(CPU::F, (A == 0));
@@ -1110,7 +1122,7 @@ uint8_t CPU::ADD_A_R(uint8_t reg)
 
     A = result;
 
-    PC += 2;
+    PC += 1;
     return 4;
 }
 
@@ -1242,7 +1254,7 @@ uint8_t CPU::SUB_A_R(uint8_t reg)
 
     A = result;
 
-    PC += 2;
+    PC += 1;
     return 4;
 }
 
@@ -1299,12 +1311,13 @@ uint8_t CPU::SUB_A_A()
 // helper function for 0x98 - 0x9F (minus 0x9E)
 uint8_t CPU::SBC_A_R(uint8_t reg)
 {
-    uint8_t result = A - reg - GET_FLAG_C(CPU::F);
+    uint8_t carry = GET_FLAG_C(CPU::F);
+    uint8_t result = A - reg - carry;
 
     SET_FLAG_Z(CPU::F, result == 0);
     SET_FLAG_N(CPU::F, true);
-    SET_FLAG_H(CPU::F, (A & 0x0F) < ((reg & 0x0F) + GET_FLAG_C(CPU::F)));
-    SET_FLAG_C(CPU::F, A < reg + GET_FLAG_C(CPU::F));
+    SET_FLAG_H(CPU::F, (A & 0x0F) < (reg & 0x0F) + carry);
+    SET_FLAG_C(CPU::F, static_cast<uint16_t>(A) < static_cast<uint16_t>(reg) + carry);
 
     A = result;
 
@@ -1373,43 +1386,48 @@ uint8_t CPU::AND_A_R(uint8_t reg)
     SET_FLAG_H(CPU::F, true);
     SET_FLAG_C(CPU::F, false);
 
-    PC += 2;
     return 4;
 }
 
 // 0xA0
 uint8_t CPU::AND_A_B()
 {
+    PC += 2;
     return AND_A_R(B);
 }
 
 // 0xA1
 uint8_t CPU::AND_A_C()
 {
+    PC += 2;
     return AND_A_R(C);
 }
 
 // 0xA2
 uint8_t CPU::AND_A_D()
 {
+    PC += 2;
     return AND_A_R(D);
 }
 
 // 0xA3
 uint8_t CPU::AND_A_E()
 {
+    PC += 2;
     return AND_A_R(E);
 }
 
 // 0xA4
 uint8_t CPU::AND_A_H()
 {
+    PC += 2;
     return AND_A_R(H);
 }
 
 // 0xA5
 uint8_t CPU::AND_A_L()
 {
+    PC += 2;
     return AND_A_R(L);
 }
 
@@ -1418,12 +1436,15 @@ uint8_t CPU::AND_A_mem_HL()
 {
     uint16_t HL = (H << 8) | L;
     uint8_t value = memory.readByte(HL);
+
+    PC += 2;
     return AND_A_R(value);
 }
 
 // 0xA7
 uint8_t CPU::AND_A_A()
 {
+    PC += 2;
     return AND_A_R(A);
 }
 
@@ -1562,10 +1583,10 @@ uint8_t CPU::CP_A_R(uint8_t reg)
 
     SET_FLAG_Z(CPU::F, result == 0);
     SET_FLAG_N(CPU::F, true);
-    SET_FLAG_H(CPU::F, ((A & 0x0F) - (reg & 0x0F)) & 0x10);
+    SET_FLAG_H(CPU::F, (A & 0x0F) < (reg & 0x0F));
     SET_FLAG_C(CPU::F, A < reg);
 
-    PC += 2;
+    PC += 1;
     return 4;
 }
 
@@ -1619,21 +1640,22 @@ uint8_t CPU::CP_A_A()
     return CP_A_R(A);
 }
 
-// helper function for 0xC0, 0xD0
 uint8_t CPU::RET_cc(uint8_t flag)
 {
     if (flag)
     {
         uint8_t low = memory.readByte(SP);
         SP += 1;
+
         uint8_t high = memory.readByte(SP);
         SP += 1;
+
         PC = (high << 8) | low;
+
         return 20;
     }
     else
     {
-        PC += 1;
         return 8;
     }
 }
@@ -1862,7 +1884,8 @@ uint8_t CPU::SUB_A_d8()
 // 0xE6
 uint8_t CPU::AND_A_d8()
 {
-    uint8_t value = memory.readByte(PC + 1);
+    uint8_t value = memory.readByte(PC++);
+    PC += 2;
     return AND_A_R(value);
 }
 
@@ -1930,13 +1953,13 @@ uint8_t CPU::RET_C()
 // 0xE8
 uint8_t CPU::ADD_SP_r8()
 {
-    int8_t value = memory.readByte(PC + 1);
+    int8_t value = static_cast<int8_t>(memory.readByte(PC + 1));
     uint16_t result = SP + value;
 
     SET_FLAG_Z(CPU::F, false);
     SET_FLAG_N(CPU::F, false);
-    SET_FLAG_H(CPU::F, (SP & 0x0F) + (value & 0x0F) > 0x0F);
-    SET_FLAG_C(CPU::F, (SP & 0xFF) + (value & 0xFF) > 0xFF);
+    SET_FLAG_H(CPU::F, ((SP ^ value ^ result) & 0x10) != 0);
+    SET_FLAG_C(CPU::F, ((SP ^ value ^ result) & 0x100) != 0);
 
     SP = result;
 
@@ -1947,19 +1970,19 @@ uint8_t CPU::ADD_SP_r8()
 // 0xF8
 uint8_t CPU::LD_HL_SP_r8()
 {
-    int8_t value = memory.readByte(PC + 1);
+    int8_t value = static_cast<int8_t>(memory.readByte(PC + 1));
     uint16_t result = SP + value;
 
     SET_FLAG_Z(CPU::F, false);
     SET_FLAG_N(CPU::F, false);
-    SET_FLAG_H(CPU::F, (SP & 0x0F) + (value & 0x0F) > 0x0F);
-    SET_FLAG_C(CPU::F, (SP & 0xFF) + (value & 0xFF) > 0xFF);
+    SET_FLAG_H(CPU::F, ((SP ^ value ^ result) & 0x10) != 0);
+    SET_FLAG_C(CPU::F, ((SP ^ value ^ result) & 0x100) != 0);
 
     H = (result >> 8) & 0xFF;
     L = result & 0xFF;
 
     PC += 2;
-    return 12;
+    return 12; // LD_HL_SP_r8 takes 12 cycles
 }
 
 // 0xC9
@@ -1977,12 +2000,17 @@ uint8_t CPU::RET()
 uint8_t CPU::RETI()
 {
     std::cout << "RETI" << std::endl;
+
     uint8_t low = memory.readByte(SP);
     SP += 1;
+
     uint8_t high = memory.readByte(SP);
     SP += 1;
+
     PC = (high << 8) | low;
+
     IME = true;
+
     return 16;
 }
 
@@ -2071,10 +2099,13 @@ uint8_t CPU::CALL_nn()
 {
     uint8_t low = memory.readByte(PC + 1);
     uint8_t high = memory.readByte(PC + 2);
+
+    uint16_t returnAddress = PC + 3;
     SP -= 1;
-    memory.writeByte(SP, (PC + 3) >> 8);
+    memory.writeByte(SP, returnAddress >> 8);
     SP -= 1;
-    memory.writeByte(SP, (PC + 3) & 0xFF);
+    memory.writeByte(SP, returnAddress & 0xFF);
+
     PC = (high << 8) | low;
     return 24;
 }
@@ -2083,7 +2114,7 @@ uint8_t CPU::CALL_nn()
 uint8_t CPU::ADC_A_d8()
 {
     uint8_t value = memory.readByte(PC + 1);
-    PC++;
+    PC += 2;
     return ADC_A_R(value);
 }
 
@@ -2091,7 +2122,7 @@ uint8_t CPU::ADC_A_d8()
 uint8_t CPU::SBC_A_d8()
 {
     uint8_t value = memory.readByte(PC + 1);
-    PC++;
+    PC += 2;
     return SBC_A_R(value);
 }
 
@@ -2099,7 +2130,7 @@ uint8_t CPU::SBC_A_d8()
 uint8_t CPU::XOR_A_d8()
 {
     uint8_t value = memory.readByte(PC + 1);
-    PC++;
+    PC += 2;
     return XOR_A_R(value);
 }
 
@@ -2107,6 +2138,7 @@ uint8_t CPU::XOR_A_d8()
 uint8_t CPU::CP_A_d8()
 {
     uint8_t value = memory.readByte(PC + 1);
+    PC += 2;
     return CP_A_R(value);
 }
 

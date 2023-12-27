@@ -75,10 +75,38 @@ uint8_t *PPU::getFrameBuffer()
     return frameBuffer;
 }
 
+Sprite PPU::readSpriteFromOAM(int index)
+{
+    uint8_t spriteData[4];
+    for (int i = 0; i < 4; ++i)
+    {
+        spriteData[i] = memory.readByte(OAM_BASE_ADDRESS + index * 4 + i);
+    }
+    Sprite sprite;
+    sprite.y = spriteData[0];
+    sprite.x = spriteData[1];
+    sprite.tileNumber = spriteData[2];
+    sprite.attributes = spriteData[3];
+    return sprite;
+}
+
+bool PPU::isSpriteVisibleOnScanline(Sprite &sprite, int scanline)
+{
+    return scanline >= sprite.y && scanline < sprite.y + 8;
+}
+
 void PPU::handleOAMSearch()
 {
-    // Implement OAM Search logic
-    // Transition to PixelTransfer mode after completing OAM Search
+    int visibleSprites = 0;
+    for (int i = 0; i < 40 && visibleSprites < 10; ++i)
+    {
+        Sprite sprite = readSpriteFromOAM(i);
+        if (isSpriteVisibleOnScanline(sprite, currentScanline))
+        {
+            memcpy(visibleSpriteData + visibleSprites * 4, &sprite, sizeof(Sprite));
+            visibleSprites++;
+        }
+    }
 }
 
 void PPU::handlePixelTransfer()
@@ -106,39 +134,28 @@ void PPU::renderScanline()
         return;
     }
 
+    int lineOffset = currentScanline % 8 * 2;
+    int pixelBaseIndex = currentScanline * SCREEN_WIDTH * 3;
+
     for (int x = 0; x < SCREEN_WIDTH; x++)
     {
         int tileX = x / 8;
         int tileY = currentScanline / 8;
         int tileMapIndex = tileY * 32 + tileX;
-        uint8_t tileNumber = memory.readByte(TILE_MAP_0_BASE_ADDRESS + tileMapIndex);
-        uint8_t tileData = memory.readByte(TILE_DATA_0_BASE_ADDRESS + tileNumber * 16 + currentScanline % 8 * 2);
 
-        uint8_t byte1 = memory.readByte(TILE_DATA_0_BASE_ADDRESS + tileNumber * 16 + currentScanline % 8 * 2);
-        uint8_t byte2 = memory.readByte(TILE_DATA_0_BASE_ADDRESS + tileNumber * 16 + currentScanline % 8 * 2 + 1);
+        uint8_t tileNumber = memory.readByte(TILE_MAP_0_BASE_ADDRESS + tileMapIndex);
+        uint8_t byte1 = memory.readByte(TILE_DATA_0_BASE_ADDRESS + tileNumber * 16 + lineOffset);
+        uint8_t byte2 = memory.readByte(TILE_DATA_0_BASE_ADDRESS + tileNumber * 16 + lineOffset + 1);
+
         int bitPosition = 7 - (x % 8);
         uint8_t colorBit1 = (byte1 >> bitPosition) & 1;
         uint8_t colorBit2 = (byte2 >> bitPosition) & 1;
         uint8_t colorIndex = (colorBit2 << 1) | colorBit1;
-        Color color = WHITE;
 
-        switch (colorIndex)
-        {
-        case 0:
-            color = WHITE;
-            break;
-        case 1:
-            color = LIGHT_GRAY;
-            break;
-        case 2:
-            color = DARK_GRAY;
-            break;
-        case 3:
-            color = BLACK;
-            break;
-        }
+        static const Color colorTable[4] = {WHITE, LIGHT_GRAY, DARK_GRAY, BLACK};
+        Color color = colorTable[colorIndex];
 
-        int pixelIndex = (currentScanline * SCREEN_WIDTH + x) * 3;
+        int pixelIndex = pixelBaseIndex + x * 3;
         frameBuffer[pixelIndex] = color.r;
         frameBuffer[pixelIndex + 1] = color.g;
         frameBuffer[pixelIndex + 2] = color.b;

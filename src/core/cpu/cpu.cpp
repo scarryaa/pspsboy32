@@ -575,11 +575,6 @@ uint8_t CPU::fetchInstruction()
     Logger logger;
     uint8_t opcode = memory.readByte(PC);
     // logger.println(logger.formatLogMessage(A, F, B, C, D, E, H, L, SP, PC, opcode, 0, 0, 0));
-    // print every twenty five thousandth line
-    // if (debugCounter % 25000 == 0)
-    // {
-    //     std::cout << "line: " << debugCounter << std::endl;
-    // }
     debugCounter++;
 
     return opcode;
@@ -623,7 +618,7 @@ uint8_t CPU::executeCycle()
 
 void CPU::handleInterrupts()
 {
-    if (!IME)
+    if (!IME || memory.readByte(0xFFFF) && memory.readByte(0xFF0F) == 0)
     {
         return;
     }
@@ -654,7 +649,6 @@ void CPU::handleInterrupts()
                 PC = 0x0048;
                 break; // LCD STAT
             case 2:
-                std::cout << "Timer interrupt" << std::endl;
                 PC = 0x0050;
                 break; // Timer
             case 3:

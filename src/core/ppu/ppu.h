@@ -31,6 +31,15 @@ constexpr int TILE_MAP_1_BASE_ADDRESS = 0x9C00;
 
 constexpr int OAM_BASE_ADDRESS = 0xFE00;
 
+struct Sprite
+{
+    uint8_t y;
+    uint8_t x;
+    uint8_t tileNumber;
+    uint8_t flags;
+    uint8_t attributes;
+};
+
 struct Color
 {
     uint8_t r;
@@ -43,6 +52,7 @@ constexpr Color WHITE = {255, 255, 255};
 constexpr Color LIGHT_GRAY = {192, 192, 192};
 constexpr Color DARK_GRAY = {96, 96, 96};
 constexpr Color BLACK = {0, 0, 0};
+const Color colorTable[4] = {WHITE, LIGHT_GRAY, DARK_GRAY, BLACK};
 
 // Define the PPU modes
 enum class PPUMode
@@ -76,6 +86,7 @@ private:
     int cycleCounter;                                      // Counts the cycles to determine the PPU's current state
     PPUMode currentMode;                                   // Current mode of the PPU
     int currentScanline;                                   // Current scanline being processed
+    uint8_t visibleSpriteData[10 * 4];                     // Stores the sprite data for the visible sprites
 
     // Handles the OAM search phase
     void handleOAMSearch();
@@ -94,6 +105,9 @@ private:
 
     // Renders the frame
     void renderFrame();
+
+    Sprite readSpriteFromOAM(int index);
+    bool isSpriteVisibleOnScanline(Sprite &sprite, int scanline);
 };
 
 #endif // PPU_H

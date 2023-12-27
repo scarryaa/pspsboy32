@@ -13,12 +13,14 @@ class ESPFileReader : public FileReader
 public:
     bool open(const std::string &path) override
     {
-        file = SD.open(path.c_str(), FILE_APPEND);
+        file = SD.open(path.c_str());
         return file;
     }
 
     size_t read(char *buffer, size_t size) override
     {
+        Serial.print("read: ");
+        Serial.println(size);
         return file.readBytes(buffer, size);
     }
 

@@ -44,13 +44,12 @@ void setup()
   Serial.println("setup OK");
 
   // Read ROM file
-  Serial.println(SD.exists("roms") ? "roms folder exists" : "roms folder does not exist");
+  Serial.println(SD.exists("roms/LoZ.gb") ? "ROM file exists" : "ROM file does not exist");
 
-  // Reset the emulator
-  core.reset();
+  core.init();
 
   // Read ROM file into memory
-  if (fileReader->open("/roms/07-jr,jp,call,ret,rst.gb"))
+  if (fileReader->open("/roms/Dr. Mario (World).gb"))
   {
     char *buffer = new char[0x8000];
 
@@ -69,13 +68,26 @@ void setup()
 
 void renderGameBoyScreen()
 {
-  tft.fillScreen(TFT_GREEN);
+  // render screen buffer
+  if (core.isFrameReady())
+  {
+    // Update TFT display with the frame buffer data
+    tft.pushImage(0, 0, 480, 320, core.getFrameBuffer());
+
+    // Reset the frame ready flag in the core
+    core.resetFrameReady();
+  }
 }
 
 void processInput()
 {
   // Read the button states and pass them to the emulator
   // Map ESP32 GPIO pin states to Game Boy button states
+}
+
+void processAudio()
+{
+  // Audio processing
 }
 
 void loop()
@@ -88,11 +100,9 @@ void loop()
 
   // Read input buttons and process them
   processInput();
-}
 
-void processAudio()
-{
-  // Audio processing
+  // Process audio
+  processAudio();
 }
 #endif
 
