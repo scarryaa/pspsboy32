@@ -592,6 +592,8 @@ uint8_t CPU::executeCycle()
 {
     uint8_t cycles = 0;
 
+    Logger logger;
+    // logger.println(logger.formatLogMessage(A, F, B, C, D, E, H, L, SP, PC, 0, 0, 0, 0));
     // Handle interrupts if IME is set and there's a pending interrupt
     if (IME && ((memory.readByte(0xFFFF) & memory.readByte(0xFF0F)) != 0))
     {
@@ -618,7 +620,7 @@ uint8_t CPU::executeCycle()
 
 void CPU::handleInterrupts()
 {
-    if (!IME || memory.readByte(0xFFFF) && memory.readByte(0xFF0F) == 0)
+    if (!IME || memory.readByte(0xFFFF) & memory.readByte(0xFF0F) == 0)
     {
         return;
     }

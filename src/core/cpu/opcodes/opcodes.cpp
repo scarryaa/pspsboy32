@@ -27,14 +27,15 @@ uint8_t CPU::JR_i8(uint8_t condition)
 {
     int8_t offset = static_cast<int8_t>(memory.readByte(PC + 1));
 
+    PC += 2;
+
     if (condition)
     {
-        PC += offset + 2;
+        PC += offset;
         return 12;
     }
     else
     {
-        PC += 2;
         return 8;
     }
 }
@@ -1392,42 +1393,42 @@ uint8_t CPU::AND_A_R(uint8_t reg)
 // 0xA0
 uint8_t CPU::AND_A_B()
 {
-    PC += 2;
+    PC += 1;
     return AND_A_R(B);
 }
 
 // 0xA1
 uint8_t CPU::AND_A_C()
 {
-    PC += 2;
+    PC += 1;
     return AND_A_R(C);
 }
 
 // 0xA2
 uint8_t CPU::AND_A_D()
 {
-    PC += 2;
+    PC += 1;
     return AND_A_R(D);
 }
 
 // 0xA3
 uint8_t CPU::AND_A_E()
 {
-    PC += 2;
+    PC += 1;
     return AND_A_R(E);
 }
 
 // 0xA4
 uint8_t CPU::AND_A_H()
 {
-    PC += 2;
+    PC += 1;
     return AND_A_R(H);
 }
 
 // 0xA5
 uint8_t CPU::AND_A_L()
 {
-    PC += 2;
+    PC += 1;
     return AND_A_R(L);
 }
 
@@ -1437,14 +1438,14 @@ uint8_t CPU::AND_A_mem_HL()
     uint16_t HL = (H << 8) | L;
     uint8_t value = memory.readByte(HL);
 
-    PC += 2;
+    PC += 1;
     return AND_A_R(value);
 }
 
 // 0xA7
 uint8_t CPU::AND_A_A()
 {
-    PC += 2;
+    PC += 1;
     return AND_A_R(A);
 }
 
@@ -1678,6 +1679,7 @@ uint8_t CPU::RET_NZ()
 // 0xD0
 uint8_t CPU::RET_NC()
 {
+    PC++;
     return RET_cc(!GET_FLAG_C(CPU::F));
 }
 
@@ -1871,6 +1873,7 @@ uint8_t CPU::PUSH_AF()
 uint8_t CPU::ADD_A_d8()
 {
     uint8_t value = memory.readByte(PC + 1);
+    PC++;
     return ADD_A_R(value);
 }
 
@@ -1878,6 +1881,7 @@ uint8_t CPU::ADD_A_d8()
 uint8_t CPU::SUB_A_d8()
 {
     uint8_t value = memory.readByte(PC + 1);
+    PC++;
     return SUB_A_R(value);
 }
 
@@ -1885,7 +1889,7 @@ uint8_t CPU::SUB_A_d8()
 uint8_t CPU::AND_A_d8()
 {
     uint8_t value = memory.readByte(PC++);
-    PC += 2;
+    PC += 1;
     return AND_A_R(value);
 }
 
@@ -1902,13 +1906,11 @@ uint8_t CPU::RST_n(uint8_t offset)
 {
     uint16_t returnAddress = PC + 1;
 
-    // Push the return address onto the stack
     SP -= 1;
-    memory.writeByte(SP, returnAddress >> 8);
+    memory.writeByte(SP, (returnAddress >> 8) & 0xFF);
     SP -= 1;
     memory.writeByte(SP, returnAddress & 0xFF);
 
-    // Jump to the new location
     PC = offset;
 
     return 16;
@@ -2114,7 +2116,7 @@ uint8_t CPU::CALL_nn()
 uint8_t CPU::ADC_A_d8()
 {
     uint8_t value = memory.readByte(PC + 1);
-    PC += 2;
+    PC += 1;
     return ADC_A_R(value);
 }
 
@@ -2130,7 +2132,7 @@ uint8_t CPU::SBC_A_d8()
 uint8_t CPU::XOR_A_d8()
 {
     uint8_t value = memory.readByte(PC + 1);
-    PC += 2;
+    PC += 1;
     return XOR_A_R(value);
 }
 
@@ -2138,7 +2140,7 @@ uint8_t CPU::XOR_A_d8()
 uint8_t CPU::CP_A_d8()
 {
     uint8_t value = memory.readByte(PC + 1);
-    PC += 2;
+    PC += 1;
     return CP_A_R(value);
 }
 

@@ -26,6 +26,7 @@ std::unique_ptr<FileReader> fileReader;
 
 void setup()
 {
+  delay(1000);
   Logger logger;
   fileReader = std::unique_ptr<ESPFileReader>(new ESPFileReader());
   Serial.begin(115200);

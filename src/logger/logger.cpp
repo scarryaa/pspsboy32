@@ -26,6 +26,7 @@ std::string Logger::formatLogMessage(
 
 #ifdef PLATFORM_ESP32
 #include <USBCDC.h>
+#include <HardwareSerial.h>
 
 void Logger::print(uint8_t value)
 {
