@@ -3,7 +3,8 @@
 // INVALID
 uint8_t CPU::INVALID()
 {
-    // Serial.println("INVALID OPCODE");
+    Logger logger;
+    logger.println("INVALID OPCODE");
     return 0;
 }
 
@@ -181,7 +182,7 @@ uint8_t CPU::INC_B()
 
     SET_FLAG_Z(CPU::F, B == 0);
     SET_FLAG_N(CPU::F, false);
-    SET_FLAG_H(CPU::F, (B & 0x0F) == 0);
+    SET_FLAG_H(CPU::F, (B & 0x0F) == 0x00);
 
     PC += 1;
     return 4;
@@ -194,7 +195,7 @@ uint8_t CPU::INC_D()
 
     SET_FLAG_Z(CPU::F, D == 0);
     SET_FLAG_N(CPU::F, false);
-    SET_FLAG_H(CPU::F, (D & 0x0F) == 0);
+    SET_FLAG_H(CPU::F, (D & 0x0F) == 0x00);
 
     PC += 1;
     return 4;
@@ -208,7 +209,7 @@ uint8_t CPU::INC_H()
     SET_FLAG_Z(CPU::F, H == 0);
     SET_FLAG_N(CPU::F, false);
 
-    SET_FLAG_H(CPU::F, (H & 0x0F) == 0);
+    SET_FLAG_H(CPU::F, (H & 0x0F) == 0x00);
 
     PC += 1;
     return 4;
@@ -318,7 +319,6 @@ uint8_t CPU::RLCA()
     uint8_t bit7 = (A & 0x80) >> 7;
     A = (A << 1) | bit7;
 
-    SET_FLAG_Z(CPU::F, false);
     SET_FLAG_N(CPU::F, false);
     SET_FLAG_H(CPU::F, false);
     SET_FLAG_C(CPU::F, bit7 == 1);
@@ -333,7 +333,6 @@ uint8_t CPU::RLA()
     uint8_t bit7 = (A & 0x80) >> 7;
     A = (A << 1) | GET_FLAG_C(CPU::F);
 
-    SET_FLAG_Z(CPU::F, false);
     SET_FLAG_N(CPU::F, false);
     SET_FLAG_H(CPU::F, false);
     SET_FLAG_C(CPU::F, bit7 == 1);
@@ -420,11 +419,11 @@ uint8_t CPU::ADD_HL_RR(uint8_t reg1, uint8_t reg2)
 {
     uint16_t HL = (H << 8) | L;
     uint16_t reg = (reg1 << 8) | reg2;
-    uint16_t result = HL + reg;
+    uint32_t result = HL + reg;
 
     SET_FLAG_N(CPU::F, false);
     SET_FLAG_H(CPU::F, ((HL & 0x0FFF) + (reg & 0x0FFF) > 0x0FFF));
-    SET_FLAG_C(CPU::F, ((uint32_t)HL + reg) > 0xFFFF);
+    SET_FLAG_C(CPU::F, result > 0xFFFF);
 
     H = (result >> 8) & 0xFF;
     L = result & 0xFF;
@@ -455,7 +454,7 @@ uint8_t CPU::ADD_HL_HL()
 uint8_t CPU::ADD_HL_SP()
 {
     uint16_t HL = (H << 8) | L;
-    uint16_t result = HL + SP;
+    uint32_t result = HL + SP;
 
     SET_FLAG_N(CPU::F, false);
     SET_FLAG_H(CPU::F, ((HL & 0x0FFF) + (SP & 0x0FFF) > 0x0FFF));
@@ -1705,33 +1704,38 @@ uint8_t CPU::POP_RR(uint8_t &reg1, uint8_t &reg2)
     SP += 1;
     uint8_t high = memory.readByte(SP);
     SP += 1;
+
     reg1 = high;
     reg2 = low;
-    PC += 1;
+
     return 12;
 }
 
 // 0xC1
 uint8_t CPU::POP_BC()
 {
+    PC += 1;
     return POP_RR(B, C);
 }
 
 // 0xD1
 uint8_t CPU::POP_DE()
 {
+    PC += 1;
     return POP_RR(D, E);
 }
 
 // 0xE1
 uint8_t CPU::POP_HL()
 {
+    PC += 1;
     return POP_RR(H, L);
 }
 
 // 0xF1
 uint8_t CPU::POP_AF()
 {
+    PC += 1;
     uint8_t cycles = POP_RR(A, F);
 
     F &= 0xF0;
@@ -1801,17 +1805,18 @@ uint8_t CPU::DI()
     return 4;
 }
 
-// helper function for 0xC4, 0xD4
 uint8_t CPU::CALL_cc_nn(uint8_t flag)
 {
     if (flag)
     {
         uint8_t low = memory.readByte(PC + 1);
         uint8_t high = memory.readByte(PC + 2);
+
         SP -= 1;
         memory.writeByte(SP, (PC + 3) >> 8);
         SP -= 1;
         memory.writeByte(SP, (PC + 3) & 0xFF);
+
         PC = (high << 8) | low;
         return 24;
     }
@@ -1956,14 +1961,14 @@ uint8_t CPU::RET_C()
 uint8_t CPU::ADD_SP_r8()
 {
     int8_t value = static_cast<int8_t>(memory.readByte(PC + 1));
-    uint16_t result = SP + value;
+    int result = static_cast<int>(SP) + static_cast<int>(value);
 
     SET_FLAG_Z(CPU::F, false);
     SET_FLAG_N(CPU::F, false);
-    SET_FLAG_H(CPU::F, ((SP ^ value ^ result) & 0x10) != 0);
-    SET_FLAG_C(CPU::F, ((SP ^ value ^ result) & 0x100) != 0);
+    SET_FLAG_H(CPU::F, ((SP ^ value ^ (result & 0xFFFF)) & 0x10) != 0);
+    SET_FLAG_C(CPU::F, ((SP ^ value ^ (result & 0xFFFF)) & 0x100) != 0);
 
-    SP = result;
+    SP = static_cast<uint16_t>(result);
 
     PC += 2;
     return 16;
@@ -2010,7 +2015,7 @@ uint8_t CPU::RETI()
     SP += 1;
 
     PC = (high << 8) | low;
-
+    PC++;
     IME = true;
 
     return 16;
@@ -2102,11 +2107,12 @@ uint8_t CPU::CALL_nn()
     uint8_t low = memory.readByte(PC + 1);
     uint8_t high = memory.readByte(PC + 2);
 
-    uint16_t returnAddress = PC + 3;
+    PC += 3;
+
     SP -= 1;
-    memory.writeByte(SP, returnAddress >> 8);
+    memory.writeByte(SP, (PC >> 8) & 0xFF);
     SP -= 1;
-    memory.writeByte(SP, returnAddress & 0xFF);
+    memory.writeByte(SP, PC & 0xFF);
 
     PC = (high << 8) | low;
     return 24;
@@ -2116,7 +2122,7 @@ uint8_t CPU::CALL_nn()
 uint8_t CPU::ADC_A_d8()
 {
     uint8_t value = memory.readByte(PC + 1);
-    PC += 1;
+    PC += 2;
     return ADC_A_R(value);
 }
 
@@ -2132,7 +2138,7 @@ uint8_t CPU::SBC_A_d8()
 uint8_t CPU::XOR_A_d8()
 {
     uint8_t value = memory.readByte(PC + 1);
-    PC += 1;
+    PC += 2;
     return XOR_A_R(value);
 }
 
@@ -2140,7 +2146,7 @@ uint8_t CPU::XOR_A_d8()
 uint8_t CPU::CP_A_d8()
 {
     uint8_t value = memory.readByte(PC + 1);
-    PC += 1;
+    PC += 2;
     return CP_A_R(value);
 }
 

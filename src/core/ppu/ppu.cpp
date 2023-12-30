@@ -134,31 +134,36 @@ void PPU::renderScanline()
         return;
     }
 
-    int lineOffset = currentScanline % 8 * 2;
-    int pixelBaseIndex = currentScanline * SCREEN_WIDTH * 3;
+    uint8_t tileData[16];                                            // Buffer to hold tile data for one tile
+    uint16_t colorLookupTable[4] = {0xFFFF, 0xC618, 0x8410, 0x0000}; // Color lookup table
 
-    for (int x = 0; x < SCREEN_WIDTH; x++)
+    // Render background
+    for (int i = 0; i < SCREEN_WIDTH; ++i)
     {
-        int tileX = x / 8;
-        int tileY = currentScanline / 8;
-        int tileMapIndex = tileY * 32 + tileX;
+        // Calculate the tile number for this pixel
+        int tileNumber = (i + (currentScanline * SCREEN_WIDTH)) / 8;
 
-        uint8_t tileNumber = memory.readByte(TILE_MAP_0_BASE_ADDRESS + tileMapIndex);
-        uint8_t byte1 = memory.readByte(TILE_DATA_0_BASE_ADDRESS + tileNumber * 16 + lineOffset);
-        uint8_t byte2 = memory.readByte(TILE_DATA_0_BASE_ADDRESS + tileNumber * 16 + lineOffset + 1);
+        // Calculate the tile address
+        int tileAddress = TILE_DATA_0_BASE_ADDRESS + memory.readByte(TILE_MAP_0_BASE_ADDRESS + tileNumber);
 
-        int bitPosition = 7 - (x % 8);
-        uint8_t colorBit1 = (byte1 >> bitPosition) & 1;
-        uint8_t colorBit2 = (byte2 >> bitPosition) & 1;
-        uint8_t colorIndex = (colorBit2 << 1) | colorBit1;
+        // Read the tile data into the buffer
+        for (int j = 0; j < 16; ++j)
+        {
+            tileData[j] = memory.readByte(tileAddress + j);
+        }
 
-        static const Color colorTable[4] = {WHITE, LIGHT_GRAY, DARK_GRAY, BLACK};
-        Color color = colorTable[colorIndex];
+        // Calculate the offset into the tile data
+        int tileDataOffset = (i % 8) + ((currentScanline % 8) * 2);
 
-        int pixelIndex = pixelBaseIndex + x * 3;
-        frameBuffer[pixelIndex] = color.r;
-        frameBuffer[pixelIndex + 1] = color.g;
-        frameBuffer[pixelIndex + 2] = color.b;
+        // Calculate the color index for this pixel
+        int colorIndex = ((tileData[tileDataOffset + 1] >> (7 - (i % 8))) & 0x01) << 1;
+        colorIndex |= (tileData[tileDataOffset] >> (7 - (i % 8))) & 0x01;
+
+        // Calculate the offset into the frame buffer
+        int frameBufferOffset = i + (currentScanline * SCREEN_WIDTH);
+
+        // Set the pixel color in the frame buffer
+        frameBuffer[frameBufferOffset] = colorLookupTable[colorIndex];
     }
 }
 

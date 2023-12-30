@@ -50,7 +50,7 @@ void setup()
   core.init();
 
   // Read ROM file into memory
-  if (fileReader->open("/roms/Dr. Mario (World).gb"))
+  if (fileReader->open("/roms/08-misc instrs.gb"))
   {
     char *buffer = new char[0x8000];
 
@@ -73,7 +73,7 @@ void renderGameBoyScreen()
   if (core.isFrameReady())
   {
     // Update TFT display with the frame buffer data
-    tft.pushImage(0, 0, 480, 320, core.getFrameBuffer());
+    tft.pushImage(0, 0, 160, 144, core.getFrameBuffer());
 
     // Reset the frame ready flag in the core
     core.resetFrameReady();
@@ -174,7 +174,7 @@ int main(int argc, char *argv[])
   SDL_Event e;
   SDL_Texture *emulatorTexture = SDL_CreateTexture(
       renderer,
-      SDL_PIXELFORMAT_RGB24,
+      SDL_PIXELFORMAT_RGB565,
       SDL_TEXTUREACCESS_STREAMING,
       160, // Frame buffer width
       144  // Frame buffer height
@@ -197,7 +197,7 @@ int main(int argc, char *argv[])
     if (core.isFrameReady())
     {
       // Update texture with the frame buffer data
-      SDL_UpdateTexture(emulatorTexture, nullptr, core.getFrameBuffer(), 160 * 3);
+      SDL_UpdateTexture(emulatorTexture, nullptr, core.getFrameBuffer(), 160 * 2);
 
       // Clear screen
       SDL_RenderClear(renderer);

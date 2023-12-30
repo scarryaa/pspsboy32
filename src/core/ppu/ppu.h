@@ -8,7 +8,7 @@
 // Define the screen dimensions and other constants
 constexpr int SCREEN_WIDTH = 160;
 constexpr int SCREEN_HEIGHT = 144;
-constexpr int SCREEN_SIZE = SCREEN_WIDTH * SCREEN_HEIGHT * 3;
+constexpr int SCREEN_SIZE = SCREEN_WIDTH * SCREEN_HEIGHT * 2;
 constexpr int CYCLES_PER_SCANLINE = 456;
 constexpr int SCANLINES_PER_FRAME = 154;
 constexpr int CYCLES_PER_FRAME = CYCLES_PER_SCANLINE * SCANLINES_PER_FRAME;
@@ -42,17 +42,8 @@ struct Sprite
 
 struct Color
 {
-    uint8_t r;
-    uint8_t g;
-    uint8_t b;
+    uint16_t value;
 };
-
-// Define the colors
-constexpr Color WHITE = {255, 255, 255};
-constexpr Color LIGHT_GRAY = {192, 192, 192};
-constexpr Color DARK_GRAY = {96, 96, 96};
-constexpr Color BLACK = {0, 0, 0};
-const Color colorTable[4] = {WHITE, LIGHT_GRAY, DARK_GRAY, BLACK};
 
 // Define the PPU modes
 enum class PPUMode
@@ -81,12 +72,12 @@ public:
     void resetFrameReady();
 
 private:
-    Memory &memory;                                        // Reference to the memory
-    uint8_t frameBuffer[SCREEN_WIDTH * SCREEN_HEIGHT * 3]; // Frame buffer for pixel data
-    int cycleCounter;                                      // Counts the cycles to determine the PPU's current state
-    PPUMode currentMode;                                   // Current mode of the PPU
-    int currentScanline;                                   // Current scanline being processed
-    uint8_t visibleSpriteData[10 * 4];                     // Stores the sprite data for the visible sprites
+    Memory &memory;                    // Reference to the memory
+    uint8_t frameBuffer[SCREEN_SIZE];  // Frame buffer for pixel data
+    int cycleCounter;                  // Counts the cycles to determine the PPU's current state
+    PPUMode currentMode;               // Current mode of the PPU
+    int currentScanline;               // Current scanline being processed
+    uint8_t visibleSpriteData[10 * 4]; // Stores the sprite data for the visible sprites
 
     // Handles the OAM search phase
     void handleOAMSearch();
@@ -99,6 +90,13 @@ private:
 
     // Handles the VBlank phase
     void handleVBlank();
+
+    Color getColorFromIndex(uint8_t index);
+
+    // Renders a single tile
+    void renderTile(uint8_t *frameBuffer, int tileX, int tileY, uint8_t *tileData);
+
+    void renderBackground();
 
     // Renders a single scanline
     void renderScanline();

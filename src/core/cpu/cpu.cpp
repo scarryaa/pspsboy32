@@ -574,7 +574,7 @@ uint8_t CPU::fetchInstruction()
     // Fetch the next instruction from memory
     Logger logger;
     uint8_t opcode = memory.readByte(PC);
-    // logger.println(logger.formatLogMessage(A, F, B, C, D, E, H, L, SP, PC, opcode, 0, 0, 0));
+    // logger.println(logger.formatLogMessage(A, F, B, C, D, E, H, L, SP, PC, PC, PC + 1, PC + 2, PC + 3));
     debugCounter++;
 
     return opcode;
@@ -591,9 +591,6 @@ uint8_t CPU::executeExtendedInstruction(uint8_t opcode)
 uint8_t CPU::executeCycle()
 {
     uint8_t cycles = 0;
-
-    Logger logger;
-    // logger.println(logger.formatLogMessage(A, F, B, C, D, E, H, L, SP, PC, 0, 0, 0, 0));
     // Handle interrupts if IME is set and there's a pending interrupt
     if (IME && ((memory.readByte(0xFFFF) & memory.readByte(0xFF0F)) != 0))
     {
@@ -629,12 +626,10 @@ void CPU::handleInterrupts()
     {
         uint8_t mask = 1 << i;
         // Check if interrupt is enabled and requested
-        if (memory
-                .readByte(0xFFFF) &
-            memory.readByte(0xFF0F) & mask)
+        if ((memory.readByte(0xFFFF) & mask) && (memory.readByte(0xFF0F) & mask))
         {
             IME = false;
-            memory.writeByte(0xFF0F, memory.readByte(0xFF0F) & ~mask);
+            memory.writeByte(0xFF0F, memory.readByte(0xFF0F) & ~mask); // Clear interrupt request flag
             // Push current PC on stack
             memory.writeByte(--SP, PC >> 8);
             memory.writeByte(--SP, PC & 0xFF);
@@ -651,6 +646,7 @@ void CPU::handleInterrupts()
                 PC = 0x0048;
                 break; // LCD STAT
             case 2:
+                std::cout << "Timer interrupt" << std::endl;
                 PC = 0x0050;
                 break; // Timer
             case 3:
