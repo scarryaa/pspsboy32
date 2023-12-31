@@ -4,6 +4,7 @@
 #include "../memory/memory.h"
 #include <cstdint>
 #include <cstring>
+#include <cstdbool>
 
 // Define the screen dimensions and other constants
 constexpr int SCREEN_WIDTH = 160;
@@ -72,12 +73,12 @@ public:
     void resetFrameReady();
 
 private:
-    Memory &memory;                    // Reference to the memory
-    uint8_t frameBuffer[SCREEN_SIZE];  // Frame buffer for pixel data
-    int cycleCounter;                  // Counts the cycles to determine the PPU's current state
-    PPUMode currentMode;               // Current mode of the PPU
-    int currentScanline;               // Current scanline being processed
-    uint8_t visibleSpriteData[10 * 4]; // Stores the sprite data for the visible sprites
+    Memory &memory;                   // Reference to the memory
+    uint8_t frameBuffer[SCREEN_SIZE]; // Frame buffer for pixel data
+    int cycleCounter;                 // Counts the cycles to determine the PPU's current state
+    PPUMode currentMode;              // Current mode of the PPU
+    int currentScanline;              // Current scanline being processed
+    Sprite visibleSpriteData[10 * 4]; // Stores the sprite data for the visible sprites
 
     // Handles the OAM search phase
     void handleOAMSearch();

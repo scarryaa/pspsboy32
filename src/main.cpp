@@ -20,6 +20,8 @@ TFT_eSPI tft = TFT_eSPI();
 
 Core core;
 std::unique_ptr<FileReader> fileReader;
+uint8_t lastFrameBuffer[160 * 144 * 2];
+bool isLastFrameBufferInitialized = false;
 
 #ifdef PLATFORM_ESP32
 #include "file-reader/esp-file-reader.h"
@@ -50,7 +52,7 @@ void setup()
   core.init();
 
   // Read ROM file into memory
-  if (fileReader->open("/roms/08-misc instrs.gb"))
+  if (fileReader->open("/roms/Dr. Mario (World).gb"))
   {
     char *buffer = new char[0x8000];
 
@@ -67,16 +69,47 @@ void setup()
   }
 }
 
-void renderGameBoyScreen()
+bool isFrameBufferChanged(const uint8_t *currentFrameBuffer)
 {
-  // render screen buffer
+  if (!isLastFrameBufferInitialized)
+  {
+    return true; // Always true for the first frame
+  }
+
+  for (int i = 0; i < 160 * 144; ++i)
+  {
+    if (currentFrameBuffer[i] != lastFrameBuffer[i])
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
+void updateLastFrameBuffer(const uint8_t *currentFrameBuffer)
+{
+  memcpy(lastFrameBuffer, currentFrameBuffer, sizeof(lastFrameBuffer));
+  isLastFrameBufferInitialized = true;
+}
+
+void IRAM_ATTR renderGameBoyScreen()
+{
   if (core.isFrameReady())
   {
-    // Update TFT display with the frame buffer data
-    tft.pushImage(0, 0, 160, 144, core.getFrameBuffer());
+    const uint8_t *currentFrameBuffer = core.getFrameBuffer();
 
-    // Reset the frame ready flag in the core
-    core.resetFrameReady();
+    // Check if the frame buffer has changed
+    if (isFrameBufferChanged(currentFrameBuffer))
+    {
+      // Update TFT display with the frame buffer data
+      tft.pushImage(0, 0, 320, 480, const_cast<uint8_t *>(currentFrameBuffer));
+
+      // Update the last frame buffer
+      updateLastFrameBuffer(currentFrameBuffer);
+
+      // Reset the frame ready flag in the core
+      core.resetFrameReady();
+    }
   }
 }
 

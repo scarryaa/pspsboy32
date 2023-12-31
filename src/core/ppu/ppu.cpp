@@ -107,6 +107,9 @@ void PPU::handleOAMSearch()
             visibleSprites++;
         }
     }
+
+    // Transition to Pixel Transfer mode after completing OAM Search
+    currentMode = PPUMode::PixelTransfer;
 }
 
 void PPU::handlePixelTransfer()
@@ -137,33 +140,60 @@ void PPU::renderScanline()
     uint8_t tileData[16];                                            // Buffer to hold tile data for one tile
     uint16_t colorLookupTable[4] = {0xFFFF, 0xC618, 0x8410, 0x0000}; // Color lookup table
 
-    // Render background
-    for (int i = 0; i < SCREEN_WIDTH; ++i)
-    {
-        // Calculate the tile number for this pixel
-        int tileNumber = (i + (currentScanline * SCREEN_WIDTH)) / 8;
+    uint8_t LCDC = memory.readByte(0xFF40);
+    bool useTileData1 = (LCDC & 0x10) != 0;
+    uint16_t baseDataAddress = useTileData1 ? TILE_DATA_1_BASE_ADDRESS : TILE_DATA_0_BASE_ADDRESS;
 
-        // Calculate the tile address
-        int tileAddress = TILE_DATA_0_BASE_ADDRESS + memory.readByte(TILE_MAP_0_BASE_ADDRESS + tileNumber);
+    bool useTileMap1 = (LCDC & 0x08) != 0;
+    uint16_t baseMapAddress = useTileMap1 ? TILE_MAP_1_BASE_ADDRESS : TILE_MAP_0_BASE_ADDRESS;
 
-        // Read the tile data into the buffer
-        for (int j = 0; j < 16; ++j)
+    int scrollX = 0;
+    int scrollY = 0;
+    
+    for (int x = 0; x < SCREEN_WIDTH; x += 8)
+    { // Process 8 pixels (one tile) at a time
+        int tileX = (x + scrollX) / 8;
+        int tileY = (currentScanline + scrollY) / 8;
+        int tileMapIndex = tileY * 32 + tileX;
+        uint8_t tileNumber = memory.readByte(baseMapAddress + tileMapIndex);
+
+        int16_t signedTileNumber = (int8_t)tileNumber;
+        uint16_t tileDataAddress;
+
+        if (useTileData1)
         {
-            tileData[j] = memory.readByte(tileAddress + j);
+            // When using 8000-8FFF range, tile numbers are unsigned
+            tileDataAddress = baseDataAddress + tileNumber * 16;
+        }
+        else
+        {
+            // When using 8800-97FF range, tile numbers are signed
+            // 0x9000 is the middle of the 8800-97FF range
+            tileDataAddress = 0x9000 + signedTileNumber * 16;
         }
 
-        // Calculate the offset into the tile data
-        int tileDataOffset = (i % 8) + ((currentScanline % 8) * 2);
+        // Read the entire tile data at once
+        for (int i = 0; i < 16; ++i)
+        {
+            tileData[i] = memory.readByte(tileDataAddress + i);
+        }
 
-        // Calculate the color index for this pixel
-        int colorIndex = ((tileData[tileDataOffset + 1] >> (7 - (i % 8))) & 0x01) << 1;
-        colorIndex |= (tileData[tileDataOffset] >> (7 - (i % 8))) & 0x01;
+        // Process each pixel in the tile
+        for (int tilePixelX = 0; tilePixelX < 8; ++tilePixelX)
+        {
+            int lineOffset = (currentScanline % 8) * 2;
+            uint8_t byte1 = tileData[lineOffset];
+            uint8_t byte2 = tileData[lineOffset + 1];
+            int bitPosition = 7 - tilePixelX;
+            uint8_t colorBit1 = (byte1 >> bitPosition) & 1;
+            uint8_t colorBit2 = (byte2 >> bitPosition) & 1;
+            uint8_t colorIndex = (colorBit2 << 1) | colorBit1;
 
-        // Calculate the offset into the frame buffer
-        int frameBufferOffset = i + (currentScanline * SCREEN_WIDTH);
-
-        // Set the pixel color in the frame buffer
-        frameBuffer[frameBufferOffset] = colorLookupTable[colorIndex];
+            uint16_t colorValue = colorLookupTable[colorIndex];
+            int pixelIndex = ((currentScanline * SCREEN_WIDTH) + x + tilePixelX) * 2; // 2 bytes per pixel
+            frameBuffer[pixelIndex] = colorValue & 0xFF;                              // Lower byte
+            frameBuffer[pixelIndex + 1] = (colorValue >> 8) & 0xFF;                   // Upper byte
+        }
     }
 }
 
