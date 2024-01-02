@@ -576,11 +576,7 @@ void CPU::reset()
 uint8_t CPU::fetchInstruction()
 {
     // Fetch the next instruction from memory
-    Logger logger;
-    uint8_t opcode = memory.readByte(PC);
-    // logger.println(logger.formatLogMessage(A, F, B, C, D, E, H, L, SP, PC, PC, PC + 1, PC + 2, PC + 3));
-    debugCounter++;
-
+    uint8_t opcode = memory.readByte(PC++);
     return opcode;
 }
 
@@ -594,6 +590,7 @@ uint8_t CPU::executeExtendedInstruction(uint8_t opcode)
 
 uint8_t CPU::executeCycle()
 {
+    logStatus();
     uint8_t cycles = 0;
     // Handle interrupts if IME is set and there's a pending interrupt
     handleInterrupts();
@@ -679,8 +676,6 @@ void CPU::logStatus()
 
 uint8_t CPU::executeInstruction(uint8_t opcode)
 {
-    logStatus();
-
     InstructionFunc func = instructionTable[opcode];
     return (this->*func)();
 }

@@ -11,7 +11,6 @@ uint8_t CPU::INVALID()
 // 0x00
 uint8_t CPU::NoOperation()
 {
-    PC += 1;
     return 4;
 }
 
@@ -19,16 +18,14 @@ uint8_t CPU::NoOperation()
 uint8_t CPU::Stop()
 {
     stopped = true;
-    PC += 2;
+    fetchInstruction();
     return 4;
 }
 
 // helper function for 0x20, 0x30, 0x28, 0x38
 uint8_t CPU::JR_i8(uint8_t condition)
 {
-    int8_t offset = static_cast<int8_t>(memory.readByte(PC + 1));
-
-    PC += 2;
+    int8_t offset = static_cast<int8_t>(fetchInstruction());
 
     if (condition)
     {
@@ -56,9 +53,8 @@ uint8_t CPU::JR_NC_i8()
 // helper function for 0x01, 0x11, 0x21
 uint8_t CPU::LD_RR_d16(uint8_t &reg1, uint8_t &reg2)
 {
-    reg2 = memory.readByte(PC + 1);
-    reg1 = memory.readByte(PC + 2);
-    PC += 3;
+    reg2 = fetchInstruction();
+    reg1 = fetchInstruction();
     return 12;
 }
 
@@ -83,10 +79,9 @@ uint8_t CPU::LD_HL_d16()
 // 0x31
 uint8_t CPU::LD_SP_d16()
 {
-    uint8_t low = memory.readByte(PC + 1);
-    uint8_t high = memory.readByte(PC + 2);
+    uint8_t low = fetchInstruction();
+    uint8_t high = fetchInstruction();
     SP = (high << 8) | low;
-    PC += 3;
     return 12;
 }
 
@@ -94,7 +89,6 @@ uint8_t CPU::LD_SP_d16()
 uint8_t CPU::LD_mem_RR_A(uint8_t reg1, uint8_t reg2)
 {
     memory.writeByte((reg1 << 8) | reg2, A);
-    PC += 1;
     return 8;
 }
 
@@ -118,7 +112,6 @@ uint8_t CPU::LD_mem_HL_inc_A()
     HL += 1;
     H = (HL >> 8) & 0xFF;
     L = HL & 0xFF;
-    PC += 1;
     return 8;
 }
 
@@ -133,7 +126,6 @@ uint8_t CPU::LD_mem_HL_dec_A()
     }
     L--;
 
-    PC += 1;
     return 8;
 }
 
@@ -146,7 +138,6 @@ uint8_t CPU::INC_RR(uint8_t &reg1, uint8_t &reg2)
     reg1 = (reg >> 8) & 0xFF;
     reg2 = reg & 0xFF;
 
-    PC += 1;
     return 8;
 }
 
@@ -172,7 +163,6 @@ uint8_t CPU::INC_HL()
 uint8_t CPU::INC_SP()
 {
     SP += 1;
-    PC += 1;
     return 8;
 }
 
@@ -184,7 +174,6 @@ uint8_t CPU::INC_B()
     SET_FLAG_N(CPU::F, false);
     SET_FLAG_H(CPU::F, (B & 0x0F) == 0x00);
 
-    PC += 1;
     return 4;
 }
 
@@ -197,7 +186,6 @@ uint8_t CPU::INC_D()
     SET_FLAG_N(CPU::F, false);
     SET_FLAG_H(CPU::F, (D & 0x0F) == 0x00);
 
-    PC += 1;
     return 4;
 }
 
@@ -211,7 +199,6 @@ uint8_t CPU::INC_H()
 
     SET_FLAG_H(CPU::F, (H & 0x0F) == 0x00);
 
-    PC += 1;
     return 4;
 }
 
@@ -227,7 +214,6 @@ uint8_t CPU::INC_mem_HL()
     SET_FLAG_N(CPU::F, false);
     SET_FLAG_H(CPU::F, (value & 0x0F) == 0);
 
-    PC += 1;
     return 12;
 }
 
@@ -241,7 +227,6 @@ uint8_t CPU::DEC_R(uint8_t &reg)
     SET_FLAG_Z(CPU::F, reg == 0);
     SET_FLAG_N(CPU::F, true);
 
-    PC += 1;
     return 4;
 }
 
@@ -274,15 +259,13 @@ uint8_t CPU::DEC_mem_HL()
     SET_FLAG_N(CPU::F, true);
     SET_FLAG_H(CPU::F, (value & 0x0F) == 0);
 
-    PC += 1;
     return 12;
 }
 
 // helper function for 0x06, 0x16, 0x26, 0x36
 uint8_t CPU::LD_R_d8(uint8_t &reg)
 {
-    reg = memory.readByte(PC + 1);
-    PC += 2;
+    reg = fetchInstruction();
     return 8;
 }
 
@@ -308,8 +291,7 @@ uint8_t CPU::LD_H_d8()
 uint8_t CPU::LD_mem_HL_d8()
 {
     uint16_t HL = (H << 8) | L;
-    memory.writeByte(HL, memory.readByte(PC + 1));
-    PC += 2;
+    memory.writeByte(HL, fetchInstruction());
     return 12;
 }
 
@@ -324,7 +306,6 @@ uint8_t CPU::RLCA()
     SET_FLAG_H(CPU::F, false);
     SET_FLAG_C(CPU::F, bit7 == 1);
 
-    PC += 1;
     return 4;
 }
 
@@ -339,7 +320,6 @@ uint8_t CPU::RLA()
     SET_FLAG_H(CPU::F, false);
     SET_FLAG_C(CPU::F, bit7 == 1);
 
-    PC += 1;
     return 4;
 }
 
@@ -368,7 +348,6 @@ uint8_t CPU::DAA()
     SET_FLAG_H(CPU::F, false);
     SET_FLAG_C(CPU::F, set_carry);
 
-    PC += 1;
     return 4;
 }
 
@@ -379,26 +358,24 @@ uint8_t CPU::SCF()
     SET_FLAG_H(CPU::F, false);
     SET_FLAG_C(CPU::F, true);
 
-    PC += 1;
     return 4;
 }
 
 // 0x08
 uint8_t CPU::LD_mem_d16_SP()
 {
-    uint16_t address = memory.readByte(PC + 2);
-    address = (address << 8) | memory.readByte(PC + 1);
+    uint8_t low = fetchInstruction();
+    uint8_t high = fetchInstruction();
+    uint16_t address = (high << 8) | low;
     memory.writeByte(address, SP & 0xFF);
     memory.writeByte(address + 1, SP >> 8);
-    PC += 3;
     return 20;
 }
 
 // 0x18
 uint8_t CPU::JR_i8()
 {
-    int8_t offset = static_cast<int8_t>(memory.readByte(PC + 1));
-    PC += 2;
+    int8_t offset = static_cast<int8_t>(fetchInstruction());
     PC += offset;
     return 12;
 }
@@ -429,7 +406,6 @@ uint8_t CPU::ADD_HL_RR(uint8_t reg1, uint8_t reg2)
     H = (result >> 8) & 0xFF;
     L = result & 0xFF;
 
-    PC += 1;
     return 8;
 }
 
@@ -464,7 +440,6 @@ uint8_t CPU::ADD_HL_SP()
     H = (result >> 8) & 0xFF;
     L = result & 0xFF;
 
-    PC += 1;
     return 8;
 }
 
@@ -472,7 +447,6 @@ uint8_t CPU::ADD_HL_SP()
 uint8_t CPU::LD_A_mem_RR(uint8_t reg1, uint8_t reg2)
 {
     A = memory.readByte((reg1 << 8) | reg2);
-    PC += 1;
     return 8;
 }
 
@@ -498,7 +472,6 @@ uint8_t CPU::LD_A_mem_HL_inc_dec(int8_t inc)
 
     H = (HL >> 8) & 0xFF;
     L = HL & 0xFF;
-    PC += 1;
     return 8;
 }
 
@@ -521,7 +494,6 @@ uint8_t CPU::DEC_RR(uint8_t &reg1, uint8_t &reg2)
     reg -= 1;
     reg1 = (reg >> 8) & 0xFF;
     reg2 = reg & 0xFF;
-    PC += 1;
     return 8;
 }
 
@@ -560,7 +532,6 @@ uint8_t CPU::INC_R(uint8_t &reg)
     SET_FLAG_N(CPU::F, false);
     SET_FLAG_H(CPU::F, (reg & 0x0F) == 0);
 
-    PC += 1;
     return 4;
 }
 
@@ -647,7 +618,6 @@ uint8_t CPU::RRCA()
     SET_FLAG_H(CPU::F, false);
     SET_FLAG_C(CPU::F, bit0 == 1);
 
-    PC += 1;
     return 4;
 }
 
@@ -662,7 +632,6 @@ uint8_t CPU::RRA()
     SET_FLAG_H(CPU::F, false);
     SET_FLAG_C(CPU::F, bit0 == 1);
 
-    PC += 1;
     return 4;
 }
 
@@ -674,7 +643,6 @@ uint8_t CPU::CPL()
     SET_FLAG_N(CPU::F, true);
     SET_FLAG_H(CPU::F, true);
 
-    PC += 1;
     return 4;
 }
 
@@ -685,7 +653,6 @@ uint8_t CPU::CCF()
     SET_FLAG_H(CPU::F, false);
     SET_FLAG_C(CPU::F, !GET_FLAG_C(CPU::F));
 
-    PC += 1;
     return 4;
 }
 
@@ -693,7 +660,6 @@ uint8_t CPU::CCF()
 uint8_t CPU::LD_R_R(uint8_t &reg1, uint8_t reg2)
 {
     reg1 = reg2;
-    PC += 1;
     return 4;
 }
 
@@ -737,7 +703,6 @@ uint8_t CPU::LD_B_L()
 uint8_t CPU::LD_B_mem_HL()
 {
     B = memory.readByte((H << 8) | L);
-    PC += 1;
     return 8;
 }
 
@@ -787,7 +752,6 @@ uint8_t CPU::LD_C_L()
 uint8_t CPU::LD_C_mem_HL()
 {
     C = memory.readByte((H << 8) | L);
-    PC += 1;
     return 8;
 }
 
@@ -837,7 +801,6 @@ uint8_t CPU::LD_D_L()
 uint8_t CPU::LD_D_mem_HL()
 {
     D = memory.readByte((H << 8) | L);
-    PC += 1;
     return 8;
 }
 
@@ -887,7 +850,6 @@ uint8_t CPU::LD_E_L()
 uint8_t CPU::LD_E_mem_HL()
 {
     E = memory.readByte((H << 8) | L);
-    PC += 1;
     return 8;
 }
 
@@ -937,7 +899,6 @@ uint8_t CPU::LD_H_L()
 uint8_t CPU::LD_H_mem_HL()
 {
     H = memory.readByte((H << 8) | L);
-    PC += 1;
     return 8;
 }
 
@@ -987,7 +948,6 @@ uint8_t CPU::LD_L_L()
 uint8_t CPU::LD_L_mem_HL()
 {
     L = memory.readByte((H << 8) | L);
-    PC += 1;
     return 8;
 }
 
@@ -1001,7 +961,6 @@ uint8_t CPU::LD_L_A()
 uint8_t CPU::LD_mem_HL_B()
 {
     memory.writeByte((H << 8) | L, B);
-    PC += 1;
     return 8;
 }
 
@@ -1009,7 +968,6 @@ uint8_t CPU::LD_mem_HL_B()
 uint8_t CPU::LD_mem_HL_C()
 {
     memory.writeByte((H << 8) | L, C);
-    PC += 1;
     return 8;
 }
 
@@ -1017,7 +975,6 @@ uint8_t CPU::LD_mem_HL_C()
 uint8_t CPU::LD_mem_HL_D()
 {
     memory.writeByte((H << 8) | L, D);
-    PC += 1;
     return 8;
 }
 
@@ -1025,7 +982,6 @@ uint8_t CPU::LD_mem_HL_D()
 uint8_t CPU::LD_mem_HL_E()
 {
     memory.writeByte((H << 8) | L, E);
-    PC += 1;
     return 8;
 }
 
@@ -1033,7 +989,6 @@ uint8_t CPU::LD_mem_HL_E()
 uint8_t CPU::LD_mem_HL_H()
 {
     memory.writeByte((H << 8) | L, H);
-    PC += 1;
     return 8;
 }
 
@@ -1041,7 +996,6 @@ uint8_t CPU::LD_mem_HL_H()
 uint8_t CPU::LD_mem_HL_L()
 {
     memory.writeByte((H << 8) | L, L);
-    PC += 1;
     return 8;
 }
 
@@ -1058,7 +1012,6 @@ uint8_t CPU::HALT()
     {
         // Normal halt behavior
         halted = true;
-        PC += 1;
     }
     return 4;
 }
@@ -1067,7 +1020,6 @@ uint8_t CPU::HALT()
 uint8_t CPU::LD_mem_HL_A()
 {
     memory.writeByte((H << 8) | L, A);
-    PC += 1;
     return 8;
 }
 
@@ -1111,7 +1063,6 @@ uint8_t CPU::LD_A_L()
 uint8_t CPU::LD_A_mem_HL()
 {
     A = memory.readByte((H << 8) | L);
-    PC += 1;
     return 8;
 }
 
@@ -1133,7 +1084,6 @@ uint8_t CPU::ADD_A_R(uint8_t reg)
 
     A = result;
 
-    PC += 1;
     return 4;
 }
 
@@ -1199,7 +1149,6 @@ uint8_t CPU::ADC_A_R(uint8_t reg)
 
     A = result;
 
-    PC += 1;
     return 4;
 }
 
@@ -1265,7 +1214,6 @@ uint8_t CPU::SUB_A_R(uint8_t reg)
 
     A = result;
 
-    PC += 1;
     return 4;
 }
 
@@ -1332,7 +1280,6 @@ uint8_t CPU::SBC_A_R(uint8_t reg)
 
     A = result;
 
-    PC += 1;
     return 4;
 }
 
@@ -1402,42 +1349,36 @@ uint8_t CPU::AND_A_R(uint8_t reg)
 // 0xA0
 uint8_t CPU::AND_A_B()
 {
-    PC += 1;
     return AND_A_R(B);
 }
 
 // 0xA1
 uint8_t CPU::AND_A_C()
 {
-    PC += 1;
     return AND_A_R(C);
 }
 
 // 0xA2
 uint8_t CPU::AND_A_D()
 {
-    PC += 1;
     return AND_A_R(D);
 }
 
 // 0xA3
 uint8_t CPU::AND_A_E()
 {
-    PC += 1;
     return AND_A_R(E);
 }
 
 // 0xA4
 uint8_t CPU::AND_A_H()
 {
-    PC += 1;
     return AND_A_R(H);
 }
 
 // 0xA5
 uint8_t CPU::AND_A_L()
 {
-    PC += 1;
     return AND_A_R(L);
 }
 
@@ -1447,14 +1388,12 @@ uint8_t CPU::AND_A_mem_HL()
     uint16_t HL = (H << 8) | L;
     uint8_t value = memory.readByte(HL);
 
-    PC += 1;
     return AND_A_R(value);
 }
 
 // 0xA7
 uint8_t CPU::AND_A_A()
 {
-    PC += 1;
     return AND_A_R(A);
 }
 
@@ -1467,8 +1406,6 @@ uint8_t CPU::XOR_A_R(uint8_t reg)
     SET_FLAG_N(CPU::F, false);
     SET_FLAG_H(CPU::F, false);
     SET_FLAG_C(CPU::F, false);
-
-    PC += 1;
 
     return 4;
 }
@@ -1533,7 +1470,6 @@ uint8_t CPU::OR_A_R(uint8_t reg)
     SET_FLAG_H(CPU::F, false);
     SET_FLAG_C(CPU::F, false);
 
-    PC += 1;
     return 4;
 }
 
@@ -1597,7 +1533,6 @@ uint8_t CPU::CP_A_R(uint8_t reg)
     SET_FLAG_H(CPU::F, (A & 0x0F) < (reg & 0x0F));
     SET_FLAG_C(CPU::F, A < reg);
 
-    PC += 1;
     return 4;
 }
 
@@ -1674,9 +1609,8 @@ uint8_t CPU::RET_cc(uint8_t flag)
 // helper function for 0xE0
 uint8_t CPU::LDH_mem_n_A(uint8_t offset)
 {
-    uint8_t address = memory.readByte(PC + 1);
+    uint8_t address = fetchInstruction();
     memory.writeByte(0xFF00 + address, A);
-    PC += 2;
     return 12;
 }
 
@@ -1684,14 +1618,12 @@ uint8_t CPU::LDH_mem_n_A(uint8_t offset)
 uint8_t CPU::RET_NZ()
 {
 
-    PC++;
     return RET_cc(!GET_FLAG_Z(CPU::F));
 }
 
 // 0xD0
 uint8_t CPU::RET_NC()
 {
-    PC++;
     return RET_cc(!GET_FLAG_C(CPU::F));
 }
 
@@ -1704,9 +1636,8 @@ uint8_t CPU::LDH_mem_n_A()
 // 0xF0
 uint8_t CPU::LDH_A_mem_n()
 {
-    uint8_t address = memory.readByte(PC + 1);
+    uint8_t address = fetchInstruction();
     A = memory.readByte(0xFF00 + address);
-    PC += 2;
     return 12;
 }
 
@@ -1727,28 +1658,24 @@ uint8_t CPU::POP_RR(uint8_t &reg1, uint8_t &reg2)
 // 0xC1
 uint8_t CPU::POP_BC()
 {
-    PC += 1;
     return POP_RR(B, C);
 }
 
 // 0xD1
 uint8_t CPU::POP_DE()
 {
-    PC += 1;
     return POP_RR(D, E);
 }
 
 // 0xE1
 uint8_t CPU::POP_HL()
 {
-    PC += 1;
     return POP_RR(H, L);
 }
 
 // 0xF1
 uint8_t CPU::POP_AF()
 {
-    PC += 1;
     uint8_t cycles = POP_RR(A, F);
 
     F &= 0xF0;
@@ -1759,16 +1686,16 @@ uint8_t CPU::POP_AF()
 // helper function for 0xC2, 0xD2
 uint8_t CPU::JP_cc_nn(uint8_t flag)
 {
+    uint8_t low = fetchInstruction();
+    uint8_t high = fetchInstruction();
+
     if (flag)
     {
-        uint8_t low = memory.readByte(PC + 1);
-        uint8_t high = memory.readByte(PC + 2);
         PC = (high << 8) | low;
         return 16;
     }
     else
     {
-        PC += 3;
         return 12;
     }
 }
@@ -1789,7 +1716,6 @@ uint8_t CPU::JP_NC_nn()
 uint8_t CPU::LD_mem_C_A()
 {
     memory.writeByte(0xFF00 + C, A);
-    PC += 1;
     return 8;
 }
 
@@ -1797,15 +1723,14 @@ uint8_t CPU::LD_mem_C_A()
 uint8_t CPU::LDH_A_mem_C()
 {
     A = memory.readByte(0xFF00 + C);
-    PC += 1;
     return 8;
 }
 
 // 0xC3
 uint8_t CPU::JP_nn()
 {
-    uint8_t low = memory.readByte(PC + 1);
-    uint8_t high = memory.readByte(PC + 2);
+    uint8_t low = fetchInstruction();
+    uint8_t high = fetchInstruction();
     PC = (high << 8) | low;
     return 16;
 }
@@ -1814,28 +1739,26 @@ uint8_t CPU::JP_nn()
 uint8_t CPU::DI()
 {
     IME = false;
-    PC += 1;
     return 4;
 }
 
 uint8_t CPU::CALL_cc_nn(uint8_t flag)
 {
+    uint8_t low = fetchInstruction();
+    uint8_t high = fetchInstruction();
     if (flag)
     {
-        uint8_t low = memory.readByte(PC + 1);
-        uint8_t high = memory.readByte(PC + 2);
-
         SP -= 1;
-        memory.writeByte(SP, (PC + 3) >> 8);
+        // TODO CHECK THIS
+        memory.writeByte(SP, (PC >> 8) & 0xFF);
         SP -= 1;
-        memory.writeByte(SP, (PC + 3) & 0xFF);
+        memory.writeByte(SP, PC & 0xFF);
 
         PC = (high << 8) | low;
         return 24;
     }
     else
     {
-        PC += 3;
         return 12;
     }
 }
@@ -1859,7 +1782,6 @@ uint8_t CPU::PUSH_RR(uint8_t reg1, uint8_t reg2)
     memory.writeByte(SP, reg1);
     SP -= 1;
     memory.writeByte(SP, reg2);
-    PC += 1;
     return 16;
 }
 
@@ -1890,39 +1812,35 @@ uint8_t CPU::PUSH_AF()
 // 0xC6
 uint8_t CPU::ADD_A_d8()
 {
-    uint8_t value = memory.readByte(PC + 1);
-    PC++;
+    uint8_t value = fetchInstruction();
     return ADD_A_R(value);
 }
 
 // 0xD6
 uint8_t CPU::SUB_A_d8()
 {
-    uint8_t value = memory.readByte(PC + 1);
-    PC++;
+    uint8_t value = fetchInstruction();
     return SUB_A_R(value);
 }
 
 // 0xE6
 uint8_t CPU::AND_A_d8()
 {
-    PC += 1;
-    uint8_t value = memory.readByte(PC++);
+    uint8_t value = fetchInstruction();
     return AND_A_R(value);
 }
 
 // 0xF6
 uint8_t CPU::OR_A_d8()
 {
-    uint8_t value = memory.readByte(PC + 1);
-    PC += 1;
+    uint8_t value = fetchInstruction();
     return OR_A_R(value);
 }
 
 // helper function for 0xC7, 0xD7, 0xE7, 0xF7
 uint8_t CPU::RST_n(uint_fast16_t offset)
 {
-    uint16_t returnAddress = PC + 1;
+    uint16_t returnAddress = PC;
 
     SP -= 1;
     memory.writeByte(SP, (returnAddress >> 8) & 0xFF);
@@ -1961,21 +1879,19 @@ uint8_t CPU::RST_30H()
 // 0xC8
 uint8_t CPU::RET_Z()
 {
-    PC += 1;
     return RET_cc(GET_FLAG_Z(CPU::F));
 }
 
 // 0xD8
 uint8_t CPU::RET_C()
 {
-    PC += 1;
     return RET_cc(GET_FLAG_C(CPU::F));
 }
 
 // 0xE8
 uint8_t CPU::ADD_SP_r8()
 {
-    int8_t value = static_cast<int8_t>(memory.readByte(PC + 1));
+    int8_t value = static_cast<int8_t>(fetchInstruction());
     int result = static_cast<int>(SP) + static_cast<int>(value);
 
     SET_FLAG_Z(CPU::F, false);
@@ -1985,14 +1901,13 @@ uint8_t CPU::ADD_SP_r8()
 
     SP = static_cast<uint16_t>(result);
 
-    PC += 2;
     return 16;
 }
 
 // 0xF8
 uint8_t CPU::LD_HL_SP_r8()
 {
-    int8_t value = static_cast<int8_t>(memory.readByte(PC + 1));
+    int8_t value = static_cast<int8_t>(fetchInstruction());
     uint16_t result = SP + value;
 
     SET_FLAG_Z(CPU::F, false);
@@ -2003,7 +1918,6 @@ uint8_t CPU::LD_HL_SP_r8()
     H = (result >> 8) & 0xFF;
     L = result & 0xFF;
 
-    PC += 2;
     return 12; // LD_HL_SP_r8 takes 12 cycles
 }
 
@@ -2046,7 +1960,6 @@ uint8_t CPU::JP_HL()
 uint8_t CPU::LD_SP_HL()
 {
     SP = (H << 8) | L;
-    PC += 1;
     return 8;
 }
 
@@ -2065,31 +1978,27 @@ uint8_t CPU::JP_C_nn()
 // 0xEA
 uint8_t CPU::LD_mem_nn_A()
 {
-    uint8_t low = memory.readByte(PC + 1);
-    uint8_t high = memory.readByte(PC + 2);
+    uint8_t low = fetchInstruction();
+    uint8_t high = fetchInstruction();
     uint16_t address = (high << 8) | low;
     memory.writeByte(address, A);
-    PC += 3;
     return 16;
 }
 
 // 0xFA
 uint8_t CPU::LD_A_mem_nn()
 {
-    uint8_t low = memory.readByte(PC + 1);
-    uint8_t high = memory.readByte(PC + 2);
+    uint8_t low = fetchInstruction();
+    uint8_t high = fetchInstruction();
     uint16_t address = (high << 8) | low;
     A = memory.readByte(address);
-    PC += 3;
     return 16;
 }
 
 // helper function for 0xCB
 uint8_t CPU::CB()
 {
-    PC += 1;
-    uint8_t opcode = memory.readByte(PC);
-    PC += 1;
+    uint8_t opcode = fetchInstruction();
     uint8_t cycles = executeExtendedInstruction(opcode);
 
     return cycles;
@@ -2099,7 +2008,6 @@ uint8_t CPU::CB()
 uint8_t CPU::EI()
 {
     shouldEnableInterrupts = true;
-    PC += 1;
     return 4;
 }
 
@@ -2118,10 +2026,8 @@ uint8_t CPU::CALL_C_nn()
 // 0xCD
 uint8_t CPU::CALL_nn()
 {
-    uint8_t low = memory.readByte(PC + 1);
-    uint8_t high = memory.readByte(PC + 2);
-
-    PC += 3;
+    uint8_t low = fetchInstruction();
+    uint8_t high = fetchInstruction();
 
     SP -= 1;
     memory.writeByte(SP, (PC >> 8) & 0xFF);
@@ -2135,32 +2041,28 @@ uint8_t CPU::CALL_nn()
 // 0xCE
 uint8_t CPU::ADC_A_d8()
 {
-    uint8_t value = memory.readByte(PC + 1);
-    PC += 1;
+    uint8_t value = fetchInstruction();
     return ADC_A_R(value);
 }
 
 // 0xDE
 uint8_t CPU::SBC_A_d8()
 {
-    uint8_t value = memory.readByte(PC + 1);
-    PC += 1;
+    uint8_t value = fetchInstruction();
     return SBC_A_R(value);
 }
 
 // 0xEE
 uint8_t CPU::XOR_A_d8()
 {
-    uint8_t value = memory.readByte(PC + 1);
-    PC += 1;
+    uint8_t value = fetchInstruction();
     return XOR_A_R(value);
 }
 
 // 0xFE
 uint8_t CPU::CP_A_d8()
 {
-    uint8_t value = memory.readByte(PC + 1);
-    PC += 1;
+    uint8_t value = fetchInstruction();
     return CP_A_R(value);
 }
 

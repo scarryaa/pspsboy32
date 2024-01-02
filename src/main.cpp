@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
   std::cout << "Reading ROM file..." << std::endl;
 
   // Read ROM file into memory
-  if (fileReader->open("roms/02-interrupts.gb"))
+  if (fileReader->open("roms/01-special.gb"))
   {
     char *buffer = new char[0x8000];
 
