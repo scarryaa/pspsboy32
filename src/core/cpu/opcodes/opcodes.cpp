@@ -1048,8 +1048,18 @@ uint8_t CPU::LD_mem_HL_L()
 // 0x76
 uint8_t CPU::HALT()
 {
-    halted = true;
-    PC += 1;
+    // Check for halt bug condition (IME disabled and any interrupt requested)
+    if (!IME && (memory.readByte(0xFF0F) & memory.readByte(0xFFFF)) != 0)
+    {
+        // Halt bug: Do not actually halt and do not increment PC
+        printf("Halt bug triggered\n");
+    }
+    else
+    {
+        // Normal halt behavior
+        halted = true;
+        PC += 1;
+    }
     return 4;
 }
 
@@ -1933,19 +1943,19 @@ uint8_t CPU::RST_00H()
 // 0xD7
 uint8_t CPU::RST_10H()
 {
-    return RST_n(0x10);
+    return RST_n(0x0010);
 }
 
 // 0xE7
 uint8_t CPU::RST_20H()
 {
-    return RST_n(0x20);
+    return RST_n(0x0020);
 }
 
 // 0xF7
 uint8_t CPU::RST_30H()
 {
-    return RST_n(0x30);
+    return RST_n(0x0030);
 }
 
 // 0xC8

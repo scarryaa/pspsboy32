@@ -596,22 +596,18 @@ uint8_t CPU::executeCycle()
 {
     uint8_t cycles = 0;
     // Handle interrupts if IME is set and there's a pending interrupt
-    if (IME && ((memory.readByte(0xFFFF) & memory.readByte(0xFF0F)) != 0))
-    {
-        handleInterrupts();
-    }
+    handleInterrupts();
 
     // Fetch and execute instruction if not halted or stopped
     if (!halted && !stopped)
     {
         uint8_t opcode = fetchInstruction();
+        cycles = executeInstruction(opcode);
         if (shouldEnableInterrupts)
         {
             IME = true;
             shouldEnableInterrupts = false;
         }
-
-        cycles = executeInstruction(opcode);
     }
 
     updateTimers(cycles);
@@ -621,7 +617,7 @@ uint8_t CPU::executeCycle()
 
 void CPU::handleInterrupts()
 {
-    if (!IME || memory.readByte(0xFFFF) & memory.readByte(0xFF0F) == 0)
+    if (!IME || (memory.readByte(0xFFFF) & memory.readByte(0xFF0F)) == 0)
     {
         return;
     }
@@ -629,40 +625,42 @@ void CPU::handleInterrupts()
     for (int i = 0; i < 5; i++)
     {
         uint8_t mask = 1 << i;
-        // Check if interrupt is enabled and requested
-        if ((memory.readByte(0xFFFF) & mask) && (memory.readByte(0xFF0F) & mask))
+        uint8_t interruptEnabled = memory.readByte(0xFFFF) & mask;
+        uint8_t interruptRequested = memory.readByte(0xFF0F) & mask;
+
+        // Check if both interrupt is enabled and requested
+        if (interruptEnabled && interruptRequested)
         {
+            // Disable further interrupts
             IME = false;
-            memory.writeByte(0xFF0F, memory.readByte(0xFF0F) & ~mask); // Clear interrupt request flag
+
+            // Clear the interrupt request flag
+            memory.writeByte(0xFF0F, memory.readByte(0xFF0F) & ~mask);
+
             // Push current PC on stack
             memory.writeByte(--SP, PC >> 8);
             memory.writeByte(--SP, PC & 0xFF);
 
-            // Jump to interrupt handler
+            // Jump to the interrupt handler
             switch (i)
             {
             case 0:
-                std::cout << "V-Blank interrupt" << std::endl;
-                PC = 0x0040;
-                break; // V-Blank
+                PC = 0x0040; // V-Blank
+                break;
             case 1:
-                std::cout << "LCD STAT interrupt" << std::endl;
-                PC = 0x0048;
-                break; // LCD STAT
+                PC = 0x0048; // LCD STAT
+                break;
             case 2:
-                std::cout << "Timer interrupt" << std::endl;
-                PC = 0x0050;
-                break; // Timer
+                PC = 0x0050; // Timer
+                break;
             case 3:
-                std::cout << "Serial interrupt" << std::endl;
-                PC = 0x0058;
-                break; // Serial
+                PC = 0x0058; // Serial
+                break;
             case 4:
-                std::cout << "Joypad interrupt" << std::endl;
-                PC = 0x0060;
-                break; // Joypad
+                PC = 0x0060; // Joypad
+                break;
             }
-            break;
+            return;
         }
     }
 }
