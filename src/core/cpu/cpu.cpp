@@ -20,6 +20,8 @@ uint8_t CPU::TAC = 0;
 uint32_t CPU::divCounter = 0;
 uint32_t CPU::timerCounter = 0;
 
+FILE *status;
+
 CPU::CPU(Memory &memory) : memory(memory)
 {
 #ifdef PLATFORM_ESP32
@@ -567,6 +569,8 @@ void CPU::reset()
     E = 0xD8;
     H = 0x01;
     L = 0x4D;
+
+    status = fopen("status.txt", "w");
 }
 
 uint8_t CPU::fetchInstruction()
@@ -665,29 +669,19 @@ void CPU::handleInterrupts()
 
 void CPU::logStatus()
 {
-    Logger logger;
-
+    // print registers to file
     uint8_t mem0 = memory.readByte(PC);
     uint8_t mem1 = memory.readByte(PC + 1);
     uint8_t mem2 = memory.readByte(PC + 2);
     uint8_t mem3 = memory.readByte(PC + 3);
 
-    std::string msg = logger.formatLogMessage(A, F, B, C, D, E, H, L, SP, PC, mem0, mem1, mem2, mem3);
-
-    if (fileReader->open("status.txt"), true)
-    {
-        fileReader->writeLine(msg);
-        fileReader->close();
-    }
-    else
-    {
-        logger.println(msg);
-    }
+    fprintf(status, "A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X\n",
+            A, F, B, C, D, E, H, L, SP, PC, mem0, mem1, mem2, mem3);
 }
 
 uint8_t CPU::executeInstruction(uint8_t opcode)
 {
-    // logStatus();
+    logStatus();
 
     InstructionFunc func = instructionTable[opcode];
     return (this->*func)();

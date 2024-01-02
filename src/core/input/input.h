@@ -3,6 +3,18 @@
 
 #include <cstdint>
 
+enum class Button
+{
+    A,
+    B,
+    Select,
+    Start,
+    Right,
+    Left,
+    Up,
+    Down
+};
+
 class Input
 {
 public:
@@ -12,7 +24,8 @@ public:
     void init();
     void update();
 
-    void setButton(uint8_t button, bool pressed);
+    uint8_t getButtonState();
+    void setButtonState(Button button, bool pressed);
 
 private:
     uint8_t buttons;

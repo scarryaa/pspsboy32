@@ -44,6 +44,12 @@ Memory::~Memory()
 
 uint8_t Memory::readByte(uint16_t address)
 {
+    if (address == 0xFF00)
+    {
+        // Read from P1 (Joypad)
+        return input.getButtonState();
+    }
+
     if (address < 0x4000)
     {
         // Read from fixed ROM bank

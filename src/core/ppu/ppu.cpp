@@ -149,7 +149,7 @@ void PPU::renderScanline()
 
     int scrollX = 0;
     int scrollY = 0;
-    
+
     for (int x = 0; x < SCREEN_WIDTH; x += 8)
     { // Process 8 pixels (one tile) at a time
         int tileX = (x + scrollX) / 8;

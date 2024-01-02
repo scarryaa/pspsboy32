@@ -423,7 +423,7 @@ public:
     // helper function for 0xC5, 0xD5, 0xE5, 0xF5
     uint8_t PUSH_RR(uint8_t reg1, uint8_t reg2);
     // helper function for 0xC7, 0xD7, 0xE7, 0xF7
-    uint8_t RST_n(uint8_t offset);
+    uint8_t RST_n(uint_fast16_t offset);
     // helper function for 0xCA, 0xDA
     uint8_t JP_cc_nn(uint8_t flag);
     // helper function for 0xCB

@@ -319,6 +319,7 @@ uint8_t CPU::RLCA()
     uint8_t bit7 = (A & 0x80) >> 7;
     A = (A << 1) | bit7;
 
+    SET_FLAG_Z(CPU::F, false);
     SET_FLAG_N(CPU::F, false);
     SET_FLAG_H(CPU::F, false);
     SET_FLAG_C(CPU::F, bit7 == 1);
@@ -333,6 +334,7 @@ uint8_t CPU::RLA()
     uint8_t bit7 = (A & 0x80) >> 7;
     A = (A << 1) | GET_FLAG_C(CPU::F);
 
+    SET_FLAG_Z(CPU::F, false);
     SET_FLAG_N(CPU::F, false);
     SET_FLAG_H(CPU::F, false);
     SET_FLAG_C(CPU::F, bit7 == 1);
@@ -344,28 +346,27 @@ uint8_t CPU::RLA()
 // 0x27 DAA
 uint8_t CPU::DAA()
 {
-    int correction = 0;
-    int set_flags = 0;
+    uint16_t correction = 0;
+    bool set_carry = GET_FLAG_C(CPU::F);
 
-    // Check half-carry or if lower nibble of A is greater than 9
-    if ((GET_FLAG_H(CPU::F)) || (!(GET_FLAG_N(CPU::F)) && (A & 0x0F) > 9))
-        correction |= 0x06;
+    // Adjust for half-carry or if lower nibble of A is greater than 9
+    if (GET_FLAG_H(CPU::F) || (!GET_FLAG_N(CPU::F) && (A & 0x0F) > 9))
+        correction += 0x06;
 
-    // Check carry or if A is greater than 99
-    if ((GET_FLAG_C(CPU::F)) || (!(GET_FLAG_N(CPU::F)) && A > 0x99))
+    // Adjust for carry or if A is greater than 99
+    if (set_carry || (!GET_FLAG_N(CPU::F) && A > 0x99))
     {
-        correction |= 0x60;
-        set_flags |= GET_FLAG_C(CPU::F);
+        correction += 0x60;
+        set_carry = true;
     }
 
     // Adjust A based on the subtraction flag
-    A += (GET_FLAG_N(CPU::F)) ? -correction : correction;
-    SET_FLAG_N(CPU::F, false);
+    A += (GET_FLAG_N(CPU::F) ? -correction : correction);
 
     // Set or reset flags based on results
     SET_FLAG_Z(CPU::F, (A == 0));
     SET_FLAG_H(CPU::F, false);
-    SET_FLAG_C(CPU::F, (set_flags & GET_FLAG_C(CPU::F)));
+    SET_FLAG_C(CPU::F, set_carry);
 
     PC += 1;
     return 4;
@@ -1366,7 +1367,6 @@ uint8_t CPU::SBC_A_mem_HL()
 {
     uint16_t HL = (H << 8) | L;
     uint8_t value = memory.readByte(HL);
-    PC += 1;
     return SBC_A_R(value);
 }
 
@@ -1459,6 +1459,7 @@ uint8_t CPU::XOR_A_R(uint8_t reg)
     SET_FLAG_C(CPU::F, false);
 
     PC += 1;
+
     return 4;
 }
 
@@ -1672,6 +1673,8 @@ uint8_t CPU::LDH_mem_n_A(uint8_t offset)
 // 0xC0
 uint8_t CPU::RET_NZ()
 {
+
+    PC++;
     return RET_cc(!GET_FLAG_Z(CPU::F));
 }
 
@@ -1893,8 +1896,8 @@ uint8_t CPU::SUB_A_d8()
 // 0xE6
 uint8_t CPU::AND_A_d8()
 {
-    uint8_t value = memory.readByte(PC++);
     PC += 1;
+    uint8_t value = memory.readByte(PC++);
     return AND_A_R(value);
 }
 
@@ -1907,7 +1910,7 @@ uint8_t CPU::OR_A_d8()
 }
 
 // helper function for 0xC7, 0xD7, 0xE7, 0xF7
-uint8_t CPU::RST_n(uint8_t offset)
+uint8_t CPU::RST_n(uint_fast16_t offset)
 {
     uint16_t returnAddress = PC + 1;
 
@@ -1948,12 +1951,14 @@ uint8_t CPU::RST_30H()
 // 0xC8
 uint8_t CPU::RET_Z()
 {
+    PC += 1;
     return RET_cc(GET_FLAG_Z(CPU::F));
 }
 
 // 0xD8
 uint8_t CPU::RET_C()
 {
+    PC += 1;
     return RET_cc(GET_FLAG_C(CPU::F));
 }
 
@@ -2015,7 +2020,6 @@ uint8_t CPU::RETI()
     SP += 1;
 
     PC = (high << 8) | low;
-    PC++;
     IME = true;
 
     return 16;
@@ -2122,7 +2126,7 @@ uint8_t CPU::CALL_nn()
 uint8_t CPU::ADC_A_d8()
 {
     uint8_t value = memory.readByte(PC + 1);
-    PC += 2;
+    PC += 1;
     return ADC_A_R(value);
 }
 
@@ -2130,7 +2134,7 @@ uint8_t CPU::ADC_A_d8()
 uint8_t CPU::SBC_A_d8()
 {
     uint8_t value = memory.readByte(PC + 1);
-    PC += 2;
+    PC += 1;
     return SBC_A_R(value);
 }
 
@@ -2138,7 +2142,7 @@ uint8_t CPU::SBC_A_d8()
 uint8_t CPU::XOR_A_d8()
 {
     uint8_t value = memory.readByte(PC + 1);
-    PC += 2;
+    PC += 1;
     return XOR_A_R(value);
 }
 
@@ -2146,30 +2150,30 @@ uint8_t CPU::XOR_A_d8()
 uint8_t CPU::CP_A_d8()
 {
     uint8_t value = memory.readByte(PC + 1);
-    PC += 2;
+    PC += 1;
     return CP_A_R(value);
 }
 
 // 0xCF
 uint8_t CPU::RST_08H()
 {
-    return RST_n(0x08);
+    return RST_n(0x0008);
 }
 
 // 0xDF
 uint8_t CPU::RST_18H()
 {
-    return RST_n(0x18);
+    return RST_n(0x0018);
 }
 
 // 0xEF
 uint8_t CPU::RST_28H()
 {
-    return RST_n(0x28);
+    return RST_n(0x0028);
 }
 
 // 0xFF
 uint8_t CPU::RST_38H()
 {
-    return RST_n(0x38);
+    return RST_n(0x0038);
 }

@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
   std::cout << "Reading ROM file..." << std::endl;
 
   // Read ROM file into memory
-  if (fileReader->open("roms/Dr. Mario (World).gb"))
+  if (fileReader->open("roms/02-interrupts.gb"))
   {
     char *buffer = new char[0x8000];
 
@@ -215,13 +215,90 @@ int main(int argc, char *argv[])
 
   while (running)
   {
-    while (SDL_PollEvent(&e) != 0)
+    while (SDL_PollEvent(&e))
     {
       if (e.type == SDL_QUIT)
       {
         running = false;
       }
-      // Handle other events like input
+    }
+
+    const Uint8 *kb = SDL_GetKeyboardState(NULL);
+    if (kb[SDL_SCANCODE_ESCAPE])
+    {
+      running = false;
+    }
+
+    if (kb[SDL_SCANCODE_UP])
+    {
+      core.setButtonState(Button::Up, true);
+    }
+    else
+    {
+      core.setButtonState(Button::Up, false);
+    }
+
+    if (kb[SDL_SCANCODE_DOWN])
+    {
+      core.setButtonState(Button::Down, true);
+    }
+    else
+    {
+      core.setButtonState(Button::Down, false);
+    }
+
+    if (kb[SDL_SCANCODE_LEFT])
+    {
+      core.setButtonState(Button::Left, true);
+    }
+    else
+    {
+      core.setButtonState(Button::Left, false);
+    }
+
+    if (kb[SDL_SCANCODE_RIGHT])
+    {
+      core.setButtonState(Button::Right, true);
+    }
+    else
+    {
+      core.setButtonState(Button::Right, false);
+    }
+
+    if (kb[SDL_SCANCODE_Z])
+    {
+      core.setButtonState(Button::A, true);
+    }
+    else
+    {
+      core.setButtonState(Button::A, false);
+    }
+
+    if (kb[SDL_SCANCODE_X])
+    {
+      core.setButtonState(Button::B, true);
+    }
+    else
+    {
+      core.setButtonState(Button::B, false);
+    }
+
+    if (kb[SDL_SCANCODE_A])
+    {
+      core.setButtonState(Button::Select, true);
+    }
+    else
+    {
+      core.setButtonState(Button::Select, false);
+    }
+
+    if (kb[SDL_SCANCODE_S])
+    {
+      core.setButtonState(Button::Start, true);
+    }
+    else
+    {
+      core.setButtonState(Button::Start, false);
     }
 
     // Update emulator core

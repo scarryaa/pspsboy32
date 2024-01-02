@@ -62,3 +62,8 @@ void Core::loadRom(char *data, size_t size)
     // Load ROM implementation
     memory.loadRom(data, size);
 }
+
+void Core::setButtonState(Button button, bool pressed)
+{
+    memory.input.setButtonState(button, pressed);
+}

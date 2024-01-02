@@ -23,6 +23,9 @@ public:
     void reset();
     void loadRom(char *data, size_t size);
 
+    uint8_t getButtonState();
+    void setButtonState(Button button, bool pressed);
+
 private:
     PPU ppu;
     Memory memory;
