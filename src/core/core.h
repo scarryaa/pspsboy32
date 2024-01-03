@@ -5,6 +5,7 @@
 #include "./ppu/ppu.h"
 #include "./memory/memory.h"
 #include "./input/input.h"
+#include "./timer/timer.h"
 
 struct Core
 {
@@ -31,6 +32,7 @@ private:
     Memory memory;
     CPU cpu;
     Input input;
+    Timer timer;
 };
 
 #endif // CORE_H

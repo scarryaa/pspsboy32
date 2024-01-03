@@ -12,17 +12,9 @@ bool CPU::halted = false;
 bool CPU::IME = false;
 bool CPU::shouldEnableInterrupts = false;
 
-uint8_t CPU::DIV = 0;
-uint8_t CPU::TIMA = 0;
-uint8_t CPU::TMA = 0;
-uint8_t CPU::TAC = 0;
-
-uint32_t CPU::divCounter = 0;
-uint32_t CPU::timerCounter = 0;
-
 FILE *status;
 
-CPU::CPU(Memory &memory) : memory(memory)
+CPU::CPU(Memory &memory, Timer &timer) : memory(memory), timer(timer)
 {
 #ifdef PLATFORM_ESP32
     fileReader.reset(new ESPFileReader());
@@ -607,7 +599,7 @@ uint8_t CPU::executeCycle()
         }
     }
 
-    updateTimers(cycles);
+    timer.updateTimers(cycles);
 
     return cycles;
 }
@@ -642,18 +634,23 @@ void CPU::handleInterrupts()
             switch (i)
             {
             case 0:
+                printf("V-Blank interrupt\n");
                 PC = 0x0040; // V-Blank
                 break;
             case 1:
+                printf("LCD STAT interrupt\n");
                 PC = 0x0048; // LCD STAT
                 break;
             case 2:
+                printf("Timer interrupt\n");
                 PC = 0x0050; // Timer
                 break;
             case 3:
+                printf("Serial interrupt\n");
                 PC = 0x0058; // Serial
                 break;
             case 4:
+                printf("Joypad interrupt\n");
                 PC = 0x0060; // Joypad
                 break;
             }
@@ -678,53 +675,4 @@ uint8_t CPU::executeInstruction(uint8_t opcode)
 {
     InstructionFunc func = instructionTable[opcode];
     return (this->*func)();
-}
-
-void CPU::updateTimers(uint16_t cycles)
-{
-    // Update divider register
-    divCounter += cycles;
-    if (divCounter >= 256)
-    {
-        memory.writeByte(0xFF04, memory.readByte(0xFF04) + 1);
-        divCounter -= 256;
-    }
-
-    // Update timer register
-    uint8_t timerControl = memory.readByte(0xFF07);
-    if (timerControl & 0x04)
-    {
-        timerCounter += cycles;
-        uint16_t timerFrequency = 1024;
-        switch (timerControl & 0x03)
-        {
-        case 0:
-            timerFrequency = 1024;
-            break;
-        case 1:
-            timerFrequency = 16;
-            break;
-        case 2:
-            timerFrequency = 64;
-            break;
-        case 3:
-            timerFrequency = 256;
-            break;
-        }
-        if (timerCounter >= timerFrequency)
-        {
-            uint8_t timerValue = memory.readByte(0xFF05);
-            timerValue++;
-            if (timerValue == 0)
-            {
-                memory.writeByte(0xFF05, memory.readByte(0xFF06));        // Reload TIMA with TMA
-                memory.writeByte(0xFF0F, memory.readByte(0xFF0F) | 0x04); // Set Timer interrupt flag
-            }
-            else
-            {
-                memory.writeByte(0xFF05, timerValue);
-            }
-            timerCounter -= timerFrequency;
-        }
-    }
 }

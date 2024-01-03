@@ -18,6 +18,8 @@ uint8_t CPU::NoOperation()
 uint8_t CPU::Stop()
 {
     stopped = true;
+
+    // fetch instruction but dont do anything with it
     fetchInstruction();
     return 4;
 }
@@ -1749,7 +1751,6 @@ uint8_t CPU::CALL_cc_nn(uint8_t flag)
     if (flag)
     {
         SP -= 1;
-        // TODO CHECK THIS
         memory.writeByte(SP, (PC >> 8) & 0xFF);
         SP -= 1;
         memory.writeByte(SP, PC & 0xFF);
@@ -1924,10 +1925,10 @@ uint8_t CPU::LD_HL_SP_r8()
 // 0xC9
 uint8_t CPU::RET()
 {
-    uint8_t low = memory.readByte(SP);
-    SP += 1;
-    uint8_t high = memory.readByte(SP);
-    SP += 1;
+    std::cout << "RET" << std::endl;
+
+    uint8_t low = memory.readByte(SP++);
+    uint8_t high = memory.readByte(SP++);
     PC = (high << 8) | low;
     return 16;
 }
@@ -1937,11 +1938,8 @@ uint8_t CPU::RETI()
 {
     std::cout << "RETI" << std::endl;
 
-    uint8_t low = memory.readByte(SP);
-    SP += 1;
-
-    uint8_t high = memory.readByte(SP);
-    SP += 1;
+    uint8_t low = memory.readByte(SP++);
+    uint8_t high = memory.readByte(SP++);
 
     PC = (high << 8) | low;
     IME = true;

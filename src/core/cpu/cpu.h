@@ -18,6 +18,8 @@
 #define GET_FLAG_H(F) (((F) >> FLAG_H_BIT) & 1)
 #define GET_FLAG_C(F) (((F) >> FLAG_C_BIT) & 1)
 
+#define TIMER_DIV_DEFAULT 0xABCC
+
 #ifndef CPU_H
 #define CPU_H
 
@@ -25,6 +27,7 @@
 #include "../memory/memory.h"
 #include "../../logger/logger.h"
 #include <string>
+#include "../timer/timer.h"
 #include "../../file-reader/file-reader.h"
 
 #ifdef PLATFORM_ESP32
@@ -36,7 +39,7 @@
 class CPU
 {
 public:
-    CPU(Memory &memory);
+    CPU(Memory &memory, Timer &timer);
     ~CPU();
 
     void reset();
@@ -45,7 +48,6 @@ public:
     void handleInterrupts();
     void setFlag();
     bool checkFlag();
-    void updateTimers(uint16_t cycles);
     uint8_t fetchInstruction();
     uint8_t executeExtendedInstruction(uint8_t opcode);
     uint32_t debugCounter = 0;
@@ -66,16 +68,6 @@ public:
 
     // Interrupt request register
     static uint8_t IF;
-
-    // Timer registers
-    static uint8_t DIV;
-    static uint8_t TIMA;
-    static uint8_t TMA;
-    static uint8_t TAC;
-
-    // Timer counters
-    static uint32_t divCounter;
-    static uint32_t timerCounter;
 
     // Opcode function declarations
     uint8_t INVALID();
@@ -713,6 +705,9 @@ private:
 
     // Memory management component
     Memory &memory;
+
+    // Timer component
+    Timer &timer;
 
     // Private methods for CPU functionality
     uint8_t executeInstruction(uint8_t opcode);
