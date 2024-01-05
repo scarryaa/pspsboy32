@@ -6,31 +6,22 @@
 #include <cstring>
 #include <cstdbool>
 
-// Define the screen dimensions and other constants
-constexpr int SCREEN_WIDTH = 160;
-constexpr int SCREEN_HEIGHT = 144;
-constexpr int SCREEN_SIZE = SCREEN_WIDTH * SCREEN_HEIGHT * 2;
-constexpr int CYCLES_PER_SCANLINE = 456;
-constexpr int SCANLINES_PER_FRAME = 154;
-constexpr int CYCLES_PER_FRAME = CYCLES_PER_SCANLINE * SCANLINES_PER_FRAME;
+#define OAM_SEARCH_CYCLES 80
+#define PIXEL_TRANSFER_CYCLES 172
+#define H_BLANK_CYCLES 204
+#define V_BLANK_CYCLES 4560
+#define V_BLANK_SCANLINE_MAX 153
 
-constexpr int TILE_WIDTH = 8;
-constexpr int TILE_HEIGHT = 8;
-constexpr int TILE_SIZE = TILE_WIDTH * TILE_HEIGHT;
+#define SCREEN_WIDTH 160
+#define SCREEN_HEIGHT 144
+#define SCREEN_SIZE (SCREEN_WIDTH * SCREEN_HEIGHT * 2)
 
-constexpr int TILE_MAP_WIDTH = 32;
-constexpr int TILE_MAP_HEIGHT = 32;
-constexpr int TILE_MAP_SIZE = TILE_MAP_WIDTH * TILE_MAP_HEIGHT;
+#define TILE_DATA_0_BASE_ADDRESS 0x8000
+#define TILE_DATA_1_BASE_ADDRESS 0x8800
+#define TILE_MAP_0_BASE_ADDRESS 0x9800
+#define TILE_MAP_1_BASE_ADDRESS 0x9C00
 
-constexpr int TILE_DATA_0_BASE_ADDRESS = 0x8000;
-constexpr int TILE_DATA_1_BASE_ADDRESS = 0x8800;
-constexpr int TILE_DATA_2_BASE_ADDRESS = 0x9000;
-constexpr int TILE_DATA_3_BASE_ADDRESS = 0x9800;
-
-constexpr int TILE_MAP_0_BASE_ADDRESS = 0x9800;
-constexpr int TILE_MAP_1_BASE_ADDRESS = 0x9C00;
-
-constexpr int OAM_BASE_ADDRESS = 0xFE00;
+#define LY_ADDRESS 0xFF44
 
 struct Sprite
 {
@@ -71,42 +62,23 @@ public:
     uint8_t *getFrameBuffer();
     bool isFrameReady();
     void resetFrameReady();
+    uint8_t readLY();
 
 private:
-    Memory &memory;                   // Reference to the memory
     uint8_t frameBuffer[SCREEN_SIZE]; // Frame buffer for pixel data
     int cycleCounter;                 // Counts the cycles to determine the PPU's current state
     PPUMode currentMode;              // Current mode of the PPU
     int currentScanline;              // Current scanline being processed
     Sprite visibleSpriteData[10 * 4]; // Stores the sprite data for the visible sprites
 
-    // Handles the OAM search phase
-    void handleOAMSearch();
-
-    // Handles the pixel transfer phase
-    void handlePixelTransfer();
-
-    // Handles the HBlank phase
-    void handleHBlank();
-
-    // Handles the VBlank phase
-    void handleVBlank();
-
-    Color getColorFromIndex(uint8_t index);
-
-    // Renders a single tile
-    void renderTile(uint8_t *frameBuffer, int tileX, int tileY, uint8_t *tileData);
-
-    void renderBackground();
-
     // Renders a single scanline
     void renderScanline();
+    void renderSprites();
+    void renderWindow();
+    void renderBackground();
 
-    // Renders the frame
-    void renderFrame();
-
-    Sprite readSpriteFromOAM(int index);
-    bool isSpriteVisibleOnScanline(Sprite &sprite, int scanline);
+    bool frameProcessed; // Indicates whether the current frame has been processed
+    Memory &memory;
 };
 
 #endif // PPU_H

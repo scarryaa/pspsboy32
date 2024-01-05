@@ -14,7 +14,7 @@ void Timer::updateTimers(uint16_t cycles)
     divCounter += cycles;
     if (divCounter >= 256)
     {
-        memory.writeByte(0xFF04, memory.readByte(0xFF04) + 1);
+        memory.writeByte(0xFF04, 1);
         divCounter -= 256;
     }
 
@@ -22,23 +22,24 @@ void Timer::updateTimers(uint16_t cycles)
     uint8_t timerControl = memory.readByte(0xFF07);
     if (timerControl & 0x04)
     {
-        timerCounter += cycles;
-        uint16_t timerFrequency = 1024;
+        timerCounter += cycles * 4;
+        uint16_t timerFrequency = 4096;
         switch (timerControl & 0x03)
         {
-        case 0:
+        case 0x00:
             timerFrequency = 1024;
             break;
-        case 1:
+        case 0x01:
             timerFrequency = 16;
             break;
-        case 2:
+        case 0x02:
             timerFrequency = 64;
             break;
-        case 3:
+        case 0x03:
             timerFrequency = 256;
             break;
         }
+        
         if (timerCounter >= timerFrequency)
         {
             uint8_t timerValue = memory.readByte(0xFF05);

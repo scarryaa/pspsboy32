@@ -7,7 +7,6 @@ InstructionFunc instructionTable[256];
 typedef uint8_t (CPU::*CBInstructionFunc)();
 CBInstructionFunc CBInstructionTable[256];
 
-bool CPU::stopped = false;
 bool CPU::halted = false;
 bool CPU::IME = false;
 bool CPU::shouldEnableInterrupts = false;
@@ -584,11 +583,9 @@ uint8_t CPU::executeCycle()
 {
     logStatus();
     uint8_t cycles = 0;
-    // Handle interrupts if IME is set and there's a pending interrupt
-    handleInterrupts();
 
     // Fetch and execute instruction if not halted or stopped
-    if (!halted && !stopped)
+    if (!halted)
     {
         uint8_t opcode = fetchInstruction();
         cycles = executeInstruction(opcode);
@@ -598,6 +595,17 @@ uint8_t CPU::executeCycle()
             shouldEnableInterrupts = false;
         }
     }
+    else
+    {
+        cycles = 4;
+    }
+
+    // Handle interrupts if enabled
+    if (IME && (memory.readByte(0xFFFF) != 0x00 && memory.readByte(0xFF0F) != 0x00))
+    {
+        printf("Handling interrupts\n");
+        handleInterrupts();
+    }
 
     timer.updateTimers(cycles);
 
@@ -606,11 +614,6 @@ uint8_t CPU::executeCycle()
 
 void CPU::handleInterrupts()
 {
-    if (!IME || (memory.readByte(0xFFFF) & memory.readByte(0xFF0F)) == 0)
-    {
-        return;
-    }
-
     for (int i = 0; i < 5; i++)
     {
         uint8_t mask = 1 << i;

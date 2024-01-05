@@ -17,7 +17,7 @@ uint8_t CPU::NoOperation()
 // 0x10
 uint8_t CPU::Stop()
 {
-    stopped = true;
+    // halted = true;
 
     // fetch instruction but dont do anything with it
     fetchInstruction();
@@ -1741,6 +1741,7 @@ uint8_t CPU::JP_nn()
 uint8_t CPU::DI()
 {
     IME = false;
+    memory.writeByte(0xFFFF, 0x00);
     return 4;
 }
 
@@ -1943,6 +1944,7 @@ uint8_t CPU::RETI()
 
     PC = (high << 8) | low;
     IME = true;
+    memory.writeByte(0xFFFF, 0xFF);
 
     return 16;
 }

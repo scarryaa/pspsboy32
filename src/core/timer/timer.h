@@ -5,6 +5,8 @@
 #include "../memory/memory.h"
 
 #define TIMER_DIV_DEFAULT 0xABCC
+#define TIMA_ADDRESS 0xFF05
+#define IF_ADDRESS 0xFF0F
 
 // Timer registers
 static uint16_t DIV;

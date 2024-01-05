@@ -44,6 +44,12 @@ Memory::~Memory()
 
 uint8_t Memory::readByte(uint16_t address)
 {
+    if (address == 0xFF44)
+    {
+        // Read from LY (LCDC Y-Coordinate)
+        return ioRegisters[0x44];
+    }
+
     if (address == 0xFF00)
     {
         // Read from P1 (Joypad)
@@ -118,6 +124,12 @@ uint8_t Memory::readByte(uint16_t address)
 void Memory::writeByte(uint16_t address, uint8_t value)
 {
     Logger logger;
+
+    if (address == 0xFF44)
+    {
+        // Write to LY (LCDC Y-Coordinate)
+        ioRegisters[0x44] = 0;
+    }
 
     if (address == 0xFF01)
     {

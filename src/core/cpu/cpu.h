@@ -18,6 +18,17 @@
 #define GET_FLAG_H(F) (((F) >> FLAG_H_BIT) & 1)
 #define GET_FLAG_C(F) (((F) >> FLAG_C_BIT) & 1)
 
+#define VBLANK_INTR 0x01
+#define LCDSTAT_INTR 0x02
+#define TIMER_INTR 0x04
+#define SERIAL_INTR 0x08
+#define JOYPAD_INTR 0x10
+#define LCDC_INTR 0x20
+#define CONTROL_INTR 0x40
+
+#define IO_IE 0xFFFF
+#define IO_IF 0xFF0F
+
 #define TIMER_DIV_DEFAULT 0xABCC
 
 #ifndef CPU_H
@@ -53,9 +64,6 @@ public:
     uint32_t debugCounter = 0;
 
     static bool shouldEnableInterrupts;
-
-    // Stop flag
-    static bool stopped;
 
     // Halt flag
     static bool halted;

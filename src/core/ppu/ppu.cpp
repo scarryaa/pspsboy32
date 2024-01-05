@@ -1,6 +1,6 @@
 #include "ppu.h"
 
-PPU::PPU(Memory &memory) : memory(memory), cycleCounter(0), currentMode(PPUMode::OAMSearch), currentScanline(0)
+PPU::PPU(Memory &memory) : memory(memory)
 {
     reset();
 }
@@ -25,109 +25,70 @@ void PPU::update(int cycles)
     switch (currentMode)
     {
     case PPUMode::OAMSearch:
-        handleOAMSearch();
-        break;
-    case PPUMode::PixelTransfer:
-        handlePixelTransfer();
-        break;
-    case PPUMode::HBlank:
-        handleHBlank();
-        break;
-    case PPUMode::VBlank:
-        handleVBlank();
-        break;
-    }
-
-    // Render the current scanline
-    renderScanline();
-    currentScanline++;
-
-    // Reset the scanline if we've reached the end of the screen
-    if (currentScanline >= SCANLINES_PER_FRAME)
-    {
-        currentScanline = 0;
-    }
-
-    // Update the PPU mode based on the current scanline
-    if (currentScanline < 144)
-    {
-        if (cycleCounter < 80)
-        {
-            currentMode = PPUMode::OAMSearch;
-        }
-        else if (cycleCounter < 252)
+        if (cycleCounter >= OAM_SEARCH_CYCLES)
         {
             currentMode = PPUMode::PixelTransfer;
+            cycleCounter -= OAM_SEARCH_CYCLES;
         }
-        else
+        break;
+    case PPUMode::PixelTransfer:
+        if (cycleCounter >= PIXEL_TRANSFER_CYCLES)
         {
             currentMode = PPUMode::HBlank;
+            cycleCounter -= PIXEL_TRANSFER_CYCLES;
         }
+        break;
+    case PPUMode::HBlank:
+        if (cycleCounter >= H_BLANK_CYCLES)
+        {
+            currentScanline++;
+            memory.writeByte(LY_ADDRESS, currentScanline); // Update LY register
+
+            if (currentScanline == SCREEN_HEIGHT)
+            {
+                printf("VBlank scanline: %d\n", currentScanline);
+                currentMode = PPUMode::VBlank;
+                printf("Current mode: VBlank\n");
+            }
+            else
+            {
+                currentMode = PPUMode::OAMSearch;
+            }
+            cycleCounter -= H_BLANK_CYCLES;
+        }
+        break;
+    case PPUMode::VBlank:
+        memory.writeByte(0xFF0F, memory.readByte(0xFF0F) | 0x01); // Set VBlank interrupt flag
+
+        if (cycleCounter >= V_BLANK_CYCLES)
+        {
+            currentScanline++;
+            memory.writeByte(LY_ADDRESS, currentScanline); // Update LY register
+            printf("VBlank scanline: %d\n", currentScanline);
+
+            if (currentScanline > V_BLANK_SCANLINE_MAX)
+            {
+                currentScanline = 0;
+                memory.writeByte(LY_ADDRESS, currentScanline); // Reset LY register
+                currentMode = PPUMode::OAMSearch;
+                frameProcessed = false;
+            }
+            cycleCounter -= V_BLANK_CYCLES;
+        }
+        break;
     }
-    else
-    {
-        currentMode = PPUMode::VBlank;
-    }
+
+    renderScanline();
+}
+
+uint8_t PPU::readLY()
+{
+    return memory.readByte(LY_ADDRESS);
 }
 
 uint8_t *PPU::getFrameBuffer()
 {
     return frameBuffer;
-}
-
-Sprite PPU::readSpriteFromOAM(int index)
-{
-    uint8_t spriteData[4];
-    for (int i = 0; i < 4; ++i)
-    {
-        spriteData[i] = memory.readByte(OAM_BASE_ADDRESS + index * 4 + i);
-    }
-    Sprite sprite;
-    sprite.y = spriteData[0];
-    sprite.x = spriteData[1];
-    sprite.tileNumber = spriteData[2];
-    sprite.attributes = spriteData[3];
-    return sprite;
-}
-
-bool PPU::isSpriteVisibleOnScanline(Sprite &sprite, int scanline)
-{
-    return scanline >= sprite.y && scanline < sprite.y + 8;
-}
-
-void PPU::handleOAMSearch()
-{
-    int visibleSprites = 0;
-    for (int i = 0; i < 40 && visibleSprites < 10; ++i)
-    {
-        Sprite sprite = readSpriteFromOAM(i);
-        if (isSpriteVisibleOnScanline(sprite, currentScanline))
-        {
-            memcpy(visibleSpriteData + visibleSprites * 4, &sprite, sizeof(Sprite));
-            visibleSprites++;
-        }
-    }
-
-    // Transition to Pixel Transfer mode after completing OAM Search
-    currentMode = PPUMode::PixelTransfer;
-}
-
-void PPU::handlePixelTransfer()
-{
-    // Implement Pixel Transfer logic
-    // Transition to HBlank mode after completing Pixel Transfer
-}
-
-void PPU::handleHBlank()
-{
-    // Implement HBlank logic
-    // Update scanline and transition to OAMSearch or VBlank mode
-}
-
-void PPU::handleVBlank()
-{
-    // Implement VBlank logic
-    // Typically involves setting an interrupt, updating the frame buffer, etc.
 }
 
 void PPU::renderScanline()
@@ -199,10 +160,15 @@ void PPU::renderScanline()
 
 bool PPU::isFrameReady()
 {
-    return currentMode == PPUMode::VBlank;
+    if (currentMode == PPUMode::VBlank && !frameProcessed)
+    {
+        frameProcessed = true;
+        return true;
+    }
+    return false;
 }
 
 void PPU::resetFrameReady()
 {
-    currentMode = PPUMode::OAMSearch;
+    frameProcessed = false;
 }
