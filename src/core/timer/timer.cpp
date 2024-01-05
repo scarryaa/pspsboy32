@@ -39,7 +39,7 @@ void Timer::updateTimers(uint16_t cycles)
             timerFrequency = 256;
             break;
         }
-        
+
         if (timerCounter >= timerFrequency)
         {
             uint8_t timerValue = memory.readByte(0xFF05);

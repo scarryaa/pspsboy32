@@ -1,10 +1,79 @@
 #include "../cpu.h"
 
 // INVALID
-uint8_t CPU::INVALID()
+uint8_t CPU::INVALID_D3()
 {
-    Logger logger;
-    logger.println("INVALID OPCODE");
+    printf("INVALID OPCODE 0xD3\n");
+    return 0;
+}
+
+// INVALID
+uint8_t CPU::INVALID_E3()
+{
+    printf("INVALID OPCODE 0xE3\n");
+    return 0;
+}
+
+// INVALID
+uint8_t CPU::INVALID_E4()
+{
+    printf("INVALID OPCODE 0xE4\n");
+    return 0;
+}
+
+// INVALID
+uint8_t CPU::INVALID_F4()
+{
+    printf("INVALID OPCODE 0xF4\n");
+    return 0;
+}
+
+// INVALID
+uint8_t CPU::INVALID_DB()
+{
+    printf("INVALID OPCODE 0xDB\n");
+    return 0;
+}
+
+// INVALID
+uint8_t CPU::INVALID_EB()
+{
+    printf("INVALID OPCODE 0xEB\n");
+    return 0;
+}
+
+// INVALID
+uint8_t CPU::INVALID_EC()
+{
+    printf("INVALID OPCODE 0xEC\n");
+    return 0;
+}
+
+// INVALID
+uint8_t CPU::INVALID_FC()
+{
+    printf("INVALID OPCODE 0xFC\n");
+    return 0;
+}
+
+// INVALID
+uint8_t CPU::INVALID_DD()
+{
+    printf("INVALID OPCODE 0xDD\n");
+    return 0;
+}
+
+// INVALID
+uint8_t CPU::INVALID_ED()
+{
+    printf("INVALID OPCODE 0xED\n");
+    return 0;
+}
+
+// INVALID
+uint8_t CPU::INVALID_FD()
+{
+    printf("INVALID OPCODE 0xFD\n");
     return 0;
 }
 
@@ -1741,7 +1810,6 @@ uint8_t CPU::JP_nn()
 uint8_t CPU::DI()
 {
     IME = false;
-    memory.writeByte(0xFFFF, 0x00);
     return 4;
 }
 
@@ -1944,7 +2012,6 @@ uint8_t CPU::RETI()
 
     PC = (high << 8) | low;
     IME = true;
-    memory.writeByte(0xFFFF, 0xFF);
 
     return 16;
 }

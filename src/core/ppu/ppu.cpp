@@ -27,53 +27,52 @@ void PPU::update(int cycles)
     case PPUMode::OAMSearch:
         if (cycleCounter >= OAM_SEARCH_CYCLES)
         {
-            currentMode = PPUMode::PixelTransfer;
             cycleCounter -= OAM_SEARCH_CYCLES;
+            currentMode = PPUMode::PixelTransfer;
+            updateSTATInterrupt(); // Update STAT at the start of Pixel Transfer
         }
         break;
     case PPUMode::PixelTransfer:
         if (cycleCounter >= PIXEL_TRANSFER_CYCLES)
         {
-            currentMode = PPUMode::HBlank;
             cycleCounter -= PIXEL_TRANSFER_CYCLES;
+            currentMode = PPUMode::HBlank;
+            updateSTATInterrupt(); // Update STAT at the start of HBlank
         }
         break;
     case PPUMode::HBlank:
         if (cycleCounter >= H_BLANK_CYCLES)
         {
+            cycleCounter -= H_BLANK_CYCLES;
             currentScanline++;
-            memory.writeByte(LY_ADDRESS, currentScanline); // Update LY register
+            memory.writeByte(LY_ADDRESS, currentScanline); // Update LY
 
             if (currentScanline == SCREEN_HEIGHT)
             {
-                printf("VBlank scanline: %d\n", currentScanline);
                 currentMode = PPUMode::VBlank;
-                printf("Current mode: VBlank\n");
+                memory.writeByte(0xFF0F, memory.readByte(0xFF0F) | 0x01); // Set VBlank interrupt flag
+                updateSTATInterrupt();                                    // Update STAT at the start of VBlank
             }
             else
             {
                 currentMode = PPUMode::OAMSearch;
+                updateSTATInterrupt(); // Update STAT at the start of OAM Search
             }
-            cycleCounter -= H_BLANK_CYCLES;
         }
         break;
     case PPUMode::VBlank:
-        memory.writeByte(0xFF0F, memory.readByte(0xFF0F) | 0x01); // Set VBlank interrupt flag
-
         if (cycleCounter >= V_BLANK_CYCLES)
         {
+            cycleCounter -= V_BLANK_CYCLES;
             currentScanline++;
-            memory.writeByte(LY_ADDRESS, currentScanline); // Update LY register
-            printf("VBlank scanline: %d\n", currentScanline);
-
             if (currentScanline > V_BLANK_SCANLINE_MAX)
             {
                 currentScanline = 0;
-                memory.writeByte(LY_ADDRESS, currentScanline); // Reset LY register
                 currentMode = PPUMode::OAMSearch;
+                updateSTATInterrupt(); // Update STAT at the start of OAM Search
                 frameProcessed = false;
             }
-            cycleCounter -= V_BLANK_CYCLES;
+            memory.writeByte(LY_ADDRESS, currentScanline); // Update LY
         }
         break;
     }
@@ -98,9 +97,26 @@ void PPU::renderScanline()
         return;
     }
 
-    uint8_t tileData[16];                                            // Buffer to hold tile data for one tile
-    uint16_t colorLookupTable[4] = {0xFFFF, 0xC618, 0x8410, 0x0000}; // Color lookup table
+    // Render background
+    renderBackground();
 
+    // Render sprites
+    renderSprites();
+
+    // Render window
+    renderWindow();
+}
+
+void PPU::renderSprites()
+{
+}
+
+void PPU::renderWindow()
+{
+}
+
+void PPU::renderBackground()
+{
     uint8_t LCDC = memory.readByte(0xFF40);
     bool useTileData1 = (LCDC & 0x10) != 0;
     uint16_t baseDataAddress = useTileData1 ? TILE_DATA_1_BASE_ADDRESS : TILE_DATA_0_BASE_ADDRESS;
@@ -171,4 +187,42 @@ bool PPU::isFrameReady()
 void PPU::resetFrameReady()
 {
     frameProcessed = false;
+}
+
+void PPU::updateSTATInterrupt()
+{
+    uint8_t STAT = memory.readByte(0xFF41);
+    uint8_t LY = memory.readByte(0xFF44);
+    uint8_t LYC = memory.readByte(0xFF45);
+    bool interruptRequested = false;
+
+    // Check LYC=LY coincidence
+    if ((LY == LYC) && (STAT & 0x40))
+    {
+        interruptRequested = true;
+    }
+
+    // Check Mode 2 OAM interrupt
+    if ((currentMode == PPUMode::OAMSearch) && (STAT & 0x20))
+    {
+        interruptRequested = true;
+    }
+
+    // Check Mode 1 VBlank interrupt
+    if ((currentMode == PPUMode::VBlank) && (STAT & 0x10))
+    {
+        interruptRequested = true;
+    }
+
+    // Check Mode 0 HBlank interrupt
+    if ((currentMode == PPUMode::HBlank) && (STAT & 0x08))
+    {
+        interruptRequested = true;
+    }
+
+    if (interruptRequested)
+    {
+        // Set STAT interrupt flag in interrupt flag register
+        memory.writeByte(0xFF0F, memory.readByte(0xFF0F) | 0x02);
+    }
 }

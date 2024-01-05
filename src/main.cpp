@@ -223,83 +223,18 @@ int main(int argc, char *argv[])
       }
     }
 
-    const Uint8 *kb = SDL_GetKeyboardState(NULL);
-    if (kb[SDL_SCANCODE_ESCAPE])
-    {
-      running = false;
-    }
+    // Get input from the user
+    const uint8_t *keyboardState = SDL_GetKeyboardState(nullptr);
 
-    if (kb[SDL_SCANCODE_UP])
-    {
-      core.setButtonState(Button::Up, true);
-    }
-    else
-    {
-      core.setButtonState(Button::Up, false);
-    }
-
-    if (kb[SDL_SCANCODE_DOWN])
-    {
-      core.setButtonState(Button::Down, true);
-    }
-    else
-    {
-      core.setButtonState(Button::Down, false);
-    }
-
-    if (kb[SDL_SCANCODE_LEFT])
-    {
-      core.setButtonState(Button::Left, true);
-    }
-    else
-    {
-      core.setButtonState(Button::Left, false);
-    }
-
-    if (kb[SDL_SCANCODE_RIGHT])
-    {
-      core.setButtonState(Button::Right, true);
-    }
-    else
-    {
-      core.setButtonState(Button::Right, false);
-    }
-
-    if (kb[SDL_SCANCODE_Z])
-    {
-      core.setButtonState(Button::A, true);
-    }
-    else
-    {
-      core.setButtonState(Button::A, false);
-    }
-
-    if (kb[SDL_SCANCODE_X])
-    {
-      core.setButtonState(Button::B, true);
-    }
-    else
-    {
-      core.setButtonState(Button::B, false);
-    }
-
-    if (kb[SDL_SCANCODE_A])
-    {
-      core.setButtonState(Button::Select, true);
-    }
-    else
-    {
-      core.setButtonState(Button::Select, false);
-    }
-
-    if (kb[SDL_SCANCODE_S])
-    {
-      core.setButtonState(Button::Start, true);
-    }
-    else
-    {
-      core.setButtonState(Button::Start, false);
-    }
+    // Update the emulator input
+    core.setButtonState(Button::A, !keyboardState[SDL_SCANCODE_Z]);
+    core.setButtonState(Button::B, !keyboardState[SDL_SCANCODE_X]);
+    core.setButtonState(Button::Select, !keyboardState[SDL_SCANCODE_BACKSPACE]);
+    core.setButtonState(Button::Start, !keyboardState[SDL_SCANCODE_RETURN]);
+    core.setButtonState(Button::Right, !keyboardState[SDL_SCANCODE_RIGHT]);
+    core.setButtonState(Button::Left, !keyboardState[SDL_SCANCODE_LEFT]);
+    core.setButtonState(Button::Up, !keyboardState[SDL_SCANCODE_UP]);
+    core.setButtonState(Button::Down, !keyboardState[SDL_SCANCODE_DOWN]);
 
     // Update emulator core
     core.update();

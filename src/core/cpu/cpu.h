@@ -78,7 +78,18 @@ public:
     static uint8_t IF;
 
     // Opcode function declarations
-    uint8_t INVALID();
+    uint8_t INVALID_D3();
+    uint8_t INVALID_E3();
+    uint8_t INVALID_E4();
+    uint8_t INVALID_F4();
+    uint8_t INVALID_DB();
+    uint8_t INVALID_EB();
+    uint8_t INVALID_EC();
+    uint8_t INVALID_FC();
+    uint8_t INVALID_DD();
+    uint8_t INVALID_ED();
+    uint8_t INVALID_FD();
+
     uint8_t NoOperation();
     uint8_t Stop();
     uint8_t JR_NZ_i8();

@@ -50,12 +50,6 @@ uint8_t Memory::readByte(uint16_t address)
         return ioRegisters[0x44];
     }
 
-    if (address == 0xFF00)
-    {
-        // Read from P1 (Joypad)
-        return input.getButtonState();
-    }
-
     if (address < 0x4000)
     {
         // Read from fixed ROM bank
@@ -173,7 +167,6 @@ void Memory::writeByte(uint16_t address, uint8_t value)
     }
     else if (address >= 0xFF00 && address < 0xFF80)
     {
-        ioRegisters[0x44] = 0x90;
         // Write to I/O registers
         ioRegisters[address - 0xFF00] = value;
     }

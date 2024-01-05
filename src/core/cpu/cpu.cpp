@@ -483,13 +483,13 @@ CPU::CPU(Memory &memory, Timer &timer) : memory(memory), timer(timer)
     instructionTable[0xE2] = &CPU::LD_mem_C_A;
     instructionTable[0xF2] = &CPU::LDH_A_mem_C;
     instructionTable[0xC3] = &CPU::JP_nn;
-    instructionTable[0xD3] = &CPU::INVALID;
-    instructionTable[0xE3] = &CPU::INVALID;
+    instructionTable[0xD3] = &CPU::INVALID_D3;
+    instructionTable[0xE3] = &CPU::INVALID_E3;
     instructionTable[0xF3] = &CPU::DI;
     instructionTable[0xC4] = &CPU::CALL_NZ_nn;
     instructionTable[0xD4] = &CPU::CALL_NC_nn;
-    instructionTable[0xE4] = &CPU::INVALID;
-    instructionTable[0xF4] = &CPU::INVALID;
+    instructionTable[0xE4] = &CPU::INVALID_E4;
+    instructionTable[0xF4] = &CPU::INVALID_F4;
     instructionTable[0xC5] = &CPU::PUSH_BC;
     instructionTable[0xD5] = &CPU::PUSH_DE;
     instructionTable[0xE5] = &CPU::PUSH_HL;
@@ -515,17 +515,17 @@ CPU::CPU(Memory &memory, Timer &timer) : memory(memory), timer(timer)
     instructionTable[0xEA] = &CPU::LD_mem_nn_A;
     instructionTable[0xFA] = &CPU::LD_A_mem_nn;
     instructionTable[0xCB] = &CPU::CB;
-    instructionTable[0xDB] = &CPU::INVALID;
-    instructionTable[0xEB] = &CPU::INVALID;
+    instructionTable[0xDB] = &CPU::INVALID_DB;
+    instructionTable[0xEB] = &CPU::INVALID_EB;
     instructionTable[0xFB] = &CPU::EI;
     instructionTable[0xCC] = &CPU::CALL_Z_nn;
     instructionTable[0xDC] = &CPU::CALL_C_nn;
-    instructionTable[0xEC] = &CPU::INVALID;
-    instructionTable[0xFC] = &CPU::INVALID;
+    instructionTable[0xEC] = &CPU::INVALID_EC;
+    instructionTable[0xFC] = &CPU::INVALID_FC;
     instructionTable[0xCD] = &CPU::CALL_nn;
-    instructionTable[0xDD] = &CPU::INVALID;
-    instructionTable[0xED] = &CPU::INVALID;
-    instructionTable[0xFD] = &CPU::INVALID;
+    instructionTable[0xDD] = &CPU::INVALID_DD;
+    instructionTable[0xED] = &CPU::INVALID_ED;
+    instructionTable[0xFD] = &CPU::INVALID_FD;
     instructionTable[0xCE] = &CPU::ADC_A_d8;
     instructionTable[0xDE] = &CPU::SBC_A_d8;
     instructionTable[0xEE] = &CPU::XOR_A_d8;
@@ -603,7 +603,6 @@ uint8_t CPU::executeCycle()
     // Handle interrupts if enabled
     if (IME && (memory.readByte(0xFFFF) != 0x00 && memory.readByte(0xFF0F) != 0x00))
     {
-        printf("Handling interrupts\n");
         handleInterrupts();
     }
 
@@ -616,6 +615,8 @@ void CPU::handleInterrupts()
 {
     for (int i = 0; i < 5; i++)
     {
+        halted = false;
+
         uint8_t mask = 1 << i;
         uint8_t interruptEnabled = memory.readByte(0xFFFF) & mask;
         uint8_t interruptRequested = memory.readByte(0xFF0F) & mask;

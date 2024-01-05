@@ -76,9 +76,15 @@ private:
     void renderSprites();
     void renderWindow();
     void renderBackground();
+    void updateSTATInterrupt();
+
+    void drawBackground();
 
     bool frameProcessed; // Indicates whether the current frame has been processed
     Memory &memory;
+
+    uint8_t tileData[16];                                            // Buffer to hold tile data for one tile
+    uint16_t colorLookupTable[4] = {0xFFFF, 0xC618, 0x8410, 0x0000}; // Color lookup table
 };
 
 #endif // PPU_H

@@ -33,5 +33,4 @@ uint8_t Input::getButtonState()
 {
     // Return the buttons that are pressed
     return buttonsPressed;
-    
 }

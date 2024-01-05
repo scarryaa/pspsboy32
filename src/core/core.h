@@ -26,6 +26,7 @@ public:
 
     uint8_t getButtonState();
     void setButtonState(Button button, bool pressed);
+    void requestJoypadInterrupt();
 
 private:
     PPU ppu;
