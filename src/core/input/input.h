@@ -2,6 +2,7 @@
 #define __INPUT_H__
 
 #include <cstdint>
+#include <stdio.h>
 
 enum class Button
 {
@@ -22,7 +23,7 @@ public:
     ~Input() = default;
 
     void init();
-    void update();
+    void update(uint8_t joypad);
 
     uint8_t getButtonState();
     void setButtonState(Button button, bool pressed);

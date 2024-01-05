@@ -561,7 +561,7 @@ void CPU::reset()
     H = 0x01;
     L = 0x4D;
 
-    status = fopen("status.txt", "w");
+    // status = fopen("status.txt", "w");
 }
 
 uint8_t CPU::fetchInstruction()
@@ -581,7 +581,7 @@ uint8_t CPU::executeExtendedInstruction(uint8_t opcode)
 
 uint8_t CPU::executeCycle()
 {
-    logStatus();
+    // logStatus();
     uint8_t cycles = 0;
 
     // Fetch and execute instruction if not halted or stopped

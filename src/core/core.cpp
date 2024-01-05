@@ -14,11 +14,6 @@ void Core::init()
     reset();
 }
 
-void Core::requestJoypadInterrupt()
-{
-    memory.writeByte(0xFF0F, memory.readByte(0xFF0F) | 0x10);
-}
-
 void Core::update()
 {
     int cyclesThisUpdate = 0;
@@ -28,9 +23,6 @@ void Core::update()
 
     // Update PPU with the number of cycles that have passed
     ppu.update(cyclesThisUpdate);
-
-    // Update other subsystems if needed
-    input.update();
 }
 
 uint8_t *Core::getFrameBuffer()
@@ -80,31 +72,31 @@ void Core::setButtonState(Button button, bool pressed)
             break;
         case Button::B:
             printf("B\n");
-            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0x02);
+            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0xFD);
             break;
         case Button::Select:
             printf("Select\n");
-            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0x04);
+            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0xFB);
             break;
         case Button::Start:
             printf("Start\n");
-            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0x08);
+            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0xF7);
             break;
         case Button::Right:
             printf("Right\n");
-            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0x10);
+            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0xEF);
             break;
         case Button::Left:
             printf("Left\n");
-            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0x20);
+            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0xDF);
             break;
         case Button::Up:
             printf("Up\n");
-            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0x40);
+            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0xBF);
             break;
         case Button::Down:
             printf("Down\n");
-            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0x80);
+            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0x7F);
             break;
         }
 

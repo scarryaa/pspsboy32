@@ -12,9 +12,8 @@ void Input::init()
     buttonsPressed = 0;
 }
 
-void Input::update()
+void Input::update(uint8_t joypad)
 {
-    buttonsPressed = buttons;
 }
 
 void Input::setButtonState(Button button, bool pressed)

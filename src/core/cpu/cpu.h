@@ -26,9 +26,6 @@
 #define LCDC_INTR 0x20
 #define CONTROL_INTR 0x40
 
-#define IO_IE 0xFFFF
-#define IO_IF 0xFF0F
-
 #define TIMER_DIV_DEFAULT 0xABCC
 
 #ifndef CPU_H

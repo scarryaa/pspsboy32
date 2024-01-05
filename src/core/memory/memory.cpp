@@ -50,6 +50,17 @@ uint8_t Memory::readByte(uint16_t address)
         return ioRegisters[0x44];
     }
 
+    if (address == 0xFF0F)
+    {
+        // Interrupt flag register
+        return IF;
+    }
+    if (address == 0xFFFF)
+    {
+        // Interrupt enable register
+        return IE;
+    }
+
     if (address < 0x4000)
     {
         // Read from fixed ROM bank
@@ -100,16 +111,6 @@ uint8_t Memory::readByte(uint16_t address)
         // Unusable memory
         return 0xFF;
     }
-    else if (address == 0xFF0F)
-    {
-        // Interrupt flag register
-        return IF;
-    }
-    else if (address == 0xFFFF)
-    {
-        // Interrupt enable register
-        return IE;
-    }
 
     // Default
     return 0;
@@ -118,6 +119,17 @@ uint8_t Memory::readByte(uint16_t address)
 void Memory::writeByte(uint16_t address, uint8_t value)
 {
     Logger logger;
+
+    if (address == 0xFF0F)
+    {
+        // Interrupt flag register
+        IF = value;
+    }
+    if (address == 0xFFFF)
+    {
+        // Interrupt enable register
+        IE = value;
+    }
 
     if (address == 0xFF44)
     {
@@ -178,16 +190,6 @@ void Memory::writeByte(uint16_t address, uint8_t value)
     else if (address >= 0xFEA0 && address < 0xFF00)
     {
         // Unusable memory
-    }
-    else if (address == 0xFF0F)
-    {
-        // Interrupt flag register
-        IF = value;
-    }
-    else if (address == 0xFFFF)
-    {
-        // Interrupt enable register
-        IE = value;
     }
 }
 
