@@ -2,8 +2,9 @@
 #define MEMORY_H
 
 #include <cstdint>
-#include "../input/input.h"
 #include "../../logger/logger.h"
+
+#define OAM_START_ADDRESS 0xFE00
 
 class Memory
 {
@@ -15,7 +16,6 @@ public:
     void writeByte(uint16_t address, uint8_t value);
     void reset();
     void loadRom(char *data, size_t size);
-    Input input;
 
 private:
     uint8_t *romBank;           // Fixed ROM bank (16KB)

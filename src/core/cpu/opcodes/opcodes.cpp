@@ -1074,9 +1074,10 @@ uint8_t CPU::LD_mem_HL_L()
 uint8_t CPU::HALT()
 {
     // Check for halt bug condition (IME disabled and any interrupt requested)
-    if (!IME && (memory.readByte(0xFF0F) & memory.readByte(0xFFFF)) != 0)
+    if (!IME && (memory.readByte(0x0F) & memory.readByte(0xFF) & 0x1F))
     {
         // Halt bug: Do not actually halt and do not increment PC
+        PC--;
         printf("Halt bug triggered\n");
     }
     else
@@ -1994,8 +1995,6 @@ uint8_t CPU::LD_HL_SP_r8()
 // 0xC9
 uint8_t CPU::RET()
 {
-    std::cout << "RET" << std::endl;
-
     uint8_t low = memory.readByte(SP++);
     uint8_t high = memory.readByte(SP++);
     PC = (high << 8) | low;
@@ -2005,8 +2004,6 @@ uint8_t CPU::RET()
 // 0xD9
 uint8_t CPU::RETI()
 {
-    std::cout << "RETI" << std::endl;
-
     uint8_t low = memory.readByte(SP++);
     uint8_t high = memory.readByte(SP++);
 

@@ -120,6 +120,20 @@ void Memory::writeByte(uint16_t address, uint8_t value)
 {
     Logger logger;
 
+    // DMA transfer
+    if (address == 0xFF46)
+    {
+        // DMA transfer
+        // Copy 160 bytes from source address to OAM
+        uint16_t source = value << 8; // Source address is in the high 8 bits
+        for (int i = 0; i < 160; i++)
+        {
+            uint8_t data = readByte(source + i);
+            writeByte(OAM_START_ADDRESS + i, data);
+        }
+        return;
+    }
+
     if (address == 0xFF0F)
     {
         // Interrupt flag register

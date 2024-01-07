@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
   SDL_Event e;
   SDL_Texture *emulatorTexture = SDL_CreateTexture(
       renderer,
-      SDL_PIXELFORMAT_RGB565,
+      SDL_PIXELFORMAT_RGB332,
       SDL_TEXTUREACCESS_STREAMING,
       160, // Frame buffer width
       144  // Frame buffer height
@@ -242,7 +242,7 @@ int main(int argc, char *argv[])
     if (core.isFrameReady())
     {
       // Update texture with the frame buffer data
-      SDL_UpdateTexture(emulatorTexture, nullptr, core.getFrameBuffer(), 160 * 2);
+      SDL_UpdateTexture(emulatorTexture, nullptr, core.getFrameBuffer(), SCREEN_WIDTH);
 
       // Clear screen
       SDL_RenderClear(renderer);

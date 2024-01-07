@@ -561,7 +561,7 @@ void CPU::reset()
     H = 0x01;
     L = 0x4D;
 
-    // status = fopen("status.txt", "w");
+    status = fopen("status.txt", "w");
 }
 
 uint8_t CPU::fetchInstruction()
@@ -581,7 +581,7 @@ uint8_t CPU::executeExtendedInstruction(uint8_t opcode)
 
 uint8_t CPU::executeCycle()
 {
-    // logStatus();
+    logStatus();
     uint8_t cycles = 0;
 
     // Fetch and execute instruction if not halted or stopped
@@ -615,8 +615,6 @@ void CPU::handleInterrupts()
 {
     for (int i = 0; i < 5; i++)
     {
-        halted = false;
-
         uint8_t mask = 1 << i;
         uint8_t interruptEnabled = memory.readByte(0xFFFF) & mask;
         uint8_t interruptRequested = memory.readByte(0xFF0F) & mask;
@@ -658,9 +656,13 @@ void CPU::handleInterrupts()
                 PC = 0x0060; // Joypad
                 break;
             }
-            return;
+            halted = false;
+            break;
         }
     }
+
+    // No interrupts were handled
+    return;
 }
 
 void CPU::logStatus()

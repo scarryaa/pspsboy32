@@ -1,6 +1,6 @@
 #include "core.h"
 
-Core::Core() : cpu(memory, timer), ppu(memory), timer(memory)
+Core::Core() : cpu(memory, timer), ppu(memory), timer(memory), input(memory)
 {
 }
 
@@ -62,54 +62,19 @@ void Core::loadRom(char *data, size_t size)
 
 void Core::setButtonState(Button button, bool pressed)
 {
-    if (!pressed)
+    // read joypad register
+    uint8_t joypad = memory.readByte(0xFF00);
+    if (pressed)
     {
-        // Set button state to 0
-        switch (button)
-        {
-        case Button::A:
-            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0xFE);
-            break;
-        case Button::B:
-            printf("B\n");
-            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0xFD);
-            break;
-        case Button::Select:
-            printf("Select\n");
-            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0xFB);
-            break;
-        case Button::Start:
-            printf("Start\n");
-            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0xF7);
-            break;
-        case Button::Right:
-            printf("Right\n");
-            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0xEF);
-            break;
-        case Button::Left:
-            printf("Left\n");
-            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0xDF);
-            break;
-        case Button::Up:
-            printf("Up\n");
-            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0xBF);
-            break;
-        case Button::Down:
-            printf("Down\n");
-            memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0x7F);
-            break;
-        }
-
-        // Set bit 5 of P1 to 0
-        memory.writeByte(0xFF00, memory.readByte(0xFF00) & 0xDF);
-
-        // Set bit 4 of P1 to 1
-        memory.writeByte(0xFF00, memory.readByte(0xFF00) | 0x10);
-
-        // Request joypad interrupt
-        memory.writeByte(0xFF0F, memory.readByte(0xFF0F) | 0x10);
+        // set button pressed
+        joypad &= ~(1 << (uint8_t)button);
     }
     else
     {
+        // set button released
+        joypad |= (1 << (uint8_t)button);
     }
+
+    // write joypad register
+    memory.writeByte(0xFF00, joypad);
 }

@@ -20,11 +20,23 @@ void PPU::reset()
 
 void PPU::update(int cycles)
 {
+    // bool lcdEnabled = memory.readByte(LCDC) & 0x80 != 0;
+
+    // if (!lcdEnabled)
+    // {
+    //     // LCD is disabled, so reset the PPU state
+    //     // set bits 0-1 of STAT to 0
+    //     reset();
+    //     memory.writeByte(0xFF41, memory.readByte(0xFF41) & 0xFC);
+    //     return;
+    // }
+
     cycleCounter += cycles;
 
     switch (currentMode)
     {
     case PPUMode::OAMSearch:
+        memory.writeByte(0xFF41, (memory.readByte(0xFF41) & 0xFC) | 0x02); // Set mode flag to OAM Search
         if (cycleCounter >= OAM_SEARCH_CYCLES)
         {
             cycleCounter -= OAM_SEARCH_CYCLES;
@@ -33,6 +45,7 @@ void PPU::update(int cycles)
         }
         break;
     case PPUMode::PixelTransfer:
+        memory.writeByte(0xFF41, (memory.readByte(0xFF41) & 0xFC) | 0x03); // Set mode flag to Pixel Transfer
         if (cycleCounter >= PIXEL_TRANSFER_CYCLES)
         {
             cycleCounter -= PIXEL_TRANSFER_CYCLES;
@@ -41,6 +54,7 @@ void PPU::update(int cycles)
         }
         break;
     case PPUMode::HBlank:
+        memory.writeByte(0xFF41, (memory.readByte(0xFF41) & 0xFC) | 0x00); // Set mode flag to HBlank
         if (cycleCounter >= H_BLANK_CYCLES)
         {
             cycleCounter -= H_BLANK_CYCLES;
@@ -61,6 +75,7 @@ void PPU::update(int cycles)
         }
         break;
     case PPUMode::VBlank:
+        memory.writeByte(0xFF41, (memory.readByte(0xFF41) & 0xFC) | 0x01); // Set mode flag to VBlank
         if (cycleCounter >= V_BLANK_CYCLES)
         {
             cycleCounter -= V_BLANK_CYCLES;
@@ -107,71 +122,138 @@ void PPU::renderScanline()
     renderWindow();
 }
 
+bool PPU::isSpriteVisible(Sprite sprite)
+{
+    int sx = sprite.x - 8;
+    int sy = sprite.y - 16;
+
+    int spriteWidth = 8;
+    int spriteHeight = 8; // or 16, if using 8x16 mode
+
+    bool isWithinXBounds = (sx + spriteWidth > 0) && (sx < SCREEN_WIDTH);
+    bool isWithinYBounds = (sy + spriteHeight > 0) && (sy < SCREEN_HEIGHT);
+
+    return isWithinXBounds && isWithinYBounds;
+}
+
+uint8_t PPU::getSpritePixelColor(Sprite sprite, int x, int y)
+{
+    uint8_t _LCDC = memory.readByte(LCDC);
+    bool is8x16 = (_LCDC & 0x02) >> 1;
+    uint8_t tileIndex = sprite.tileNumber;
+    if (is8x16)
+    {
+        // Adjust tile index for the second tile of 8x16 sprite
+        if (y >= 8)
+        {
+            tileIndex += 1;
+            y -= 8; // Adjust y to the second tile
+        }
+    }
+
+    uint16_t rowAddr = TILE_DATA_0_BASE_ADDRESS + tileIndex * 16 + y * 2;
+    uint8_t lo = memory.readByte(rowAddr);
+    uint8_t hi = memory.readByte(rowAddr + 1);
+
+    uint8_t bitIndex = 7 - x;
+    uint8_t loBit = (lo >> bitIndex) & 0x01;
+    uint8_t hiBit = (hi >> bitIndex) & 0x01;
+    uint8_t colorIndex = (hiBit << 1) | loBit;
+    return colorLookupTable[colorIndex];
+}
+
 void PPU::renderSprites()
 {
+    uint8_t spriteCount = 0;
+    uint16_t BASE_ADDR = OAM_BASE_ADDRESS;
+    uint8_t SPRITE_DATA_SIZE = 4;
+
+    // Load sprite data
+    for (int i = 0; i < 40; i++)
+    {
+        uint16_t spriteAddr = BASE_ADDR + (i * SPRITE_DATA_SIZE);
+
+        Sprite tmp;
+        tmp.y = memory.readByte(spriteAddr);
+        tmp.x = memory.readByte(spriteAddr + 1);
+        tmp.tileNumber = memory.readByte(spriteAddr + 2);
+        tmp.attributes = memory.readByte(spriteAddr + 3);
+
+        visibleSpriteData[i] = tmp;
+    }
+
+    uint8_t SPRITE_HEIGHT = memory.readByte(LCDC) & 0x02 >> 1 ? 16 : 8;
+    uint8_t SPRITE_WIDTH = 8;
+
+    // Render sprites
+    for (Sprite &sprite : visibleSpriteData)
+    {
+        if (isSpriteVisible(sprite))
+        {
+            for (int sx = 0; sx < SPRITE_WIDTH; sx++)
+            {
+                for (int sy = 0; sy < SPRITE_HEIGHT; sy++)
+                {
+                    uint8_t colorIndex = getSpritePixelColor(sprite, sx, sy);
+
+                    if (colorIndex == 0)
+                        continue;
+                    uint8_t color = colorLookupTable[colorIndex];
+                    drawPixel(frameBuffer, sprite.x + sx - 8, sprite.y + sy - 16, color);
+                }
+            }
+        }
+    }
 }
 
 void PPU::renderWindow()
 {
 }
 
+uint8_t PPU::getTilePixelColor(uint16_t address, uint8_t x, uint8_t y)
+{
+    uint16_t rowAddr = address + y * 2;
+    uint8_t lo = memory.readByte(rowAddr);
+    uint8_t hi = memory.readByte(rowAddr + 1);
+
+    uint8_t bitIndex = 7 - x;
+
+    uint8_t loBit = (lo >> bitIndex) & 0x01;
+    uint8_t hiBit = (hi >> bitIndex) & 0x01;
+    uint8_t colorIndex = (hiBit << 1) | loBit;
+    return colorLookupTable[colorIndex];
+}
+
 void PPU::renderBackground()
 {
-    uint8_t LCDC = memory.readByte(0xFF40);
-    bool useTileData1 = (LCDC & 0x10) != 0;
-    uint16_t baseDataAddress = useTileData1 ? TILE_DATA_1_BASE_ADDRESS : TILE_DATA_0_BASE_ADDRESS;
+    uint8_t scx = memory.readByte(SCX_REGISTER);
+    uint8_t scy = memory.readByte(SCY_REGISTER);
 
-    bool useTileMap1 = (LCDC & 0x08) != 0;
-    uint16_t baseMapAddress = useTileMap1 ? TILE_MAP_1_BASE_ADDRESS : TILE_MAP_0_BASE_ADDRESS;
+    bool addrMode = memory.readByte(0xFF40) & 0x10;
+    uint16_t baseAddr = memory.readByte(0xFF40) & 0x10 ? TILE_DATA_0_BASE_ADDRESS : TILE_DATA_1_BASE_ADDRESS;
 
-    int scrollX = 0;
-    int scrollY = 0;
+    bool useTileMap1 = memory.readByte(LCDC) & 0x08 != 0;
+    uint16_t baseMapAddress = useTileMap1 ? TILE_MAP_0_BASE_ADDRESS : TILE_MAP_1_BASE_ADDRESS;
 
-    for (int x = 0; x < SCREEN_WIDTH; x += 8)
-    { // Process 8 pixels (one tile) at a time
-        int tileX = (x + scrollX) / 8;
-        int tileY = (currentScanline + scrollY) / 8;
-        int tileMapIndex = tileY * 32 + tileX;
-        uint8_t tileNumber = memory.readByte(baseMapAddress + tileMapIndex);
-
-        int16_t signedTileNumber = (int8_t)tileNumber;
-        uint16_t tileDataAddress;
-
-        if (useTileData1)
+    for (int x = 0; x < SCREEN_WIDTH; x++)
+    {
+        for (int y = 0; y < SCREEN_HEIGHT; y++)
         {
-            // When using 8000-8FFF range, tile numbers are unsigned
-            tileDataAddress = baseDataAddress + tileNumber * 16;
-        }
-        else
-        {
-            // When using 8800-97FF range, tile numbers are signed
-            // 0x9000 is the middle of the 8800-97FF range
-            tileDataAddress = 0x9000 + signedTileNumber * 16;
-        }
+            uint8_t tileX = (scx + x) / 8;
+            uint8_t tileY = (scy + y) / 8;
 
-        // Read the entire tile data at once
-        for (int i = 0; i < 16; ++i)
-        {
-            tileData[i] = memory.readByte(tileDataAddress + i);
-        }
-
-        // Process each pixel in the tile
-        for (int tilePixelX = 0; tilePixelX < 8; ++tilePixelX)
-        {
-            int lineOffset = (currentScanline % 8) * 2;
-            uint8_t byte1 = tileData[lineOffset];
-            uint8_t byte2 = tileData[lineOffset + 1];
-            int bitPosition = 7 - tilePixelX;
-            uint8_t colorBit1 = (byte1 >> bitPosition) & 1;
-            uint8_t colorBit2 = (byte2 >> bitPosition) & 1;
-            uint8_t colorIndex = (colorBit2 << 1) | colorBit1;
-
-            uint16_t colorValue = colorLookupTable[colorIndex];
-            int pixelIndex = ((currentScanline * SCREEN_WIDTH) + x + tilePixelX) * 2; // 2 bytes per pixel
-            frameBuffer[pixelIndex] = colorValue & 0xFF;                              // Lower byte
-            frameBuffer[pixelIndex + 1] = (colorValue >> 8) & 0xFF;                   // Upper byte
+            uint16_t tileId = memory.readByte(baseMapAddress + tileY * 32 + tileX);
+            uint16_t tileAddr = baseAddr + (addrMode ? tileId * 16 : ((int8_t)tileId + 128) * 16);
+            uint8_t color = getTilePixelColor(tileAddr, x % 8, y % 8);
+            drawPixel(frameBuffer, x, y, color);
         }
     }
+}
+
+void PPU::drawPixel(uint8_t *frameBuffer, int x, int y, uint8_t color)
+{
+    uint32_t index = (y * SCREEN_WIDTH + x);
+    frameBuffer[index] = color;
 }
 
 bool PPU::isFrameReady()

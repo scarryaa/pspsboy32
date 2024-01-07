@@ -3,6 +3,7 @@
 
 #include <cstdint>
 #include <stdio.h>
+#include "../memory/memory.h"
 
 enum class Button
 {
@@ -19,7 +20,7 @@ enum class Button
 class Input
 {
 public:
-    Input();
+    Input(Memory &memory);
     ~Input() = default;
 
     void init();
@@ -31,6 +32,7 @@ public:
 private:
     uint8_t buttons;
     uint8_t buttonsPressed;
+    Memory &memory;
 };
 
 #endif // __INPUT_H__

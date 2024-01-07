@@ -14,21 +14,26 @@
 
 #define SCREEN_WIDTH 160
 #define SCREEN_HEIGHT 144
-#define SCREEN_SIZE (SCREEN_WIDTH * SCREEN_HEIGHT * 2)
+#define SCREEN_SIZE (SCREEN_WIDTH * SCREEN_HEIGHT)
+
+#define SCX_REGISTER 0xFF43
+#define SCY_REGISTER 0xFF42
 
 #define TILE_DATA_0_BASE_ADDRESS 0x8000
 #define TILE_DATA_1_BASE_ADDRESS 0x8800
 #define TILE_MAP_0_BASE_ADDRESS 0x9800
 #define TILE_MAP_1_BASE_ADDRESS 0x9C00
+#define OAM_BASE_ADDRESS 0xFE00
+#define OAM_SIZE 160
 
 #define LY_ADDRESS 0xFF44
+#define LCDC 0xFF40
 
 struct Sprite
 {
     uint8_t y;
     uint8_t x;
     uint8_t tileNumber;
-    uint8_t flags;
     uint8_t attributes;
 };
 
@@ -77,14 +82,19 @@ private:
     void renderWindow();
     void renderBackground();
     void updateSTATInterrupt();
+    void drawPixel(uint8_t *frameBuffer, int x, int y, uint8_t color);
+    uint8_t getTilePixelColor(uint16_t address, uint8_t x, uint8_t y);
+    bool isSpriteVisible(Sprite sprite);
+    uint8_t getSpritePixelColor(Sprite sprite, int x, int y);
 
     void drawBackground();
+    void writeDMA(uint8_t value);
 
     bool frameProcessed; // Indicates whether the current frame has been processed
     Memory &memory;
 
-    uint8_t tileData[16];                                            // Buffer to hold tile data for one tile
-    uint16_t colorLookupTable[4] = {0xFFFF, 0xC618, 0x8410, 0x0000}; // Color lookup table
+    uint8_t tileData[16]; // Buffer to hold tile data for one tile
+    uint8_t colorLookupTable[4] = {0xFF, 0xB6, 0x6D, 0x00};
 };
 
 #endif // PPU_H
