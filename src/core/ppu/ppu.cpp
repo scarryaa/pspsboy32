@@ -64,6 +64,7 @@ void PPU::update(int cycles)
             if (currentScanline == SCREEN_HEIGHT)
             {
                 currentMode = PPUMode::VBlank;
+                printf("VBlank\n");
                 memory.writeByte(0xFF0F, memory.readByte(0xFF0F) | 0x01); // Set VBlank interrupt flag
                 updateSTATInterrupt();                                    // Update STAT at the start of VBlank
             }
@@ -116,7 +117,7 @@ void PPU::renderScanline()
     renderBackground();
 
     // Render sprites
-    renderSprites();
+    // renderSprites();
 
     // Render window
     renderWindow();
@@ -212,16 +213,14 @@ void PPU::renderWindow()
 
 uint8_t PPU::getTilePixelColor(uint16_t address, uint8_t x, uint8_t y)
 {
-    uint16_t rowAddr = address + y * 2;
-    uint8_t lo = memory.readByte(rowAddr);
-    uint8_t hi = memory.readByte(rowAddr + 1);
+    uint8_t lo = memory.readByte(address + y * 2);
+    uint8_t hi = memory.readByte(address + y * 2 + 1);
 
     uint8_t bitIndex = 7 - x;
-
     uint8_t loBit = (lo >> bitIndex) & 0x01;
     uint8_t hiBit = (hi >> bitIndex) & 0x01;
     uint8_t colorIndex = (hiBit << 1) | loBit;
-    return colorLookupTable[colorIndex];
+    return colorIndex;
 }
 
 void PPU::renderBackground()
@@ -229,22 +228,46 @@ void PPU::renderBackground()
     uint8_t scx = memory.readByte(SCX_REGISTER);
     uint8_t scy = memory.readByte(SCY_REGISTER);
 
+    uint16_t tile_data_addr1 = 0x8800;
+
     bool addrMode = memory.readByte(0xFF40) & 0x10;
-    uint16_t baseAddr = memory.readByte(0xFF40) & 0x10 ? TILE_DATA_0_BASE_ADDRESS : TILE_DATA_1_BASE_ADDRESS;
+    uint16_t baseAddr = addrMode ? TILE_DATA_0_BASE_ADDRESS : TILE_DATA_1_BASE_ADDRESS;
 
     bool useTileMap1 = memory.readByte(LCDC) & 0x08 != 0;
     uint16_t baseMapAddress = useTileMap1 ? TILE_MAP_0_BASE_ADDRESS : TILE_MAP_1_BASE_ADDRESS;
 
-    for (int x = 0; x < SCREEN_WIDTH; x++)
+    // Draw a tile
+    for (int y = 0; y < SCREEN_HEIGHT; y++)
     {
-        for (int y = 0; y < SCREEN_HEIGHT; y++)
+        for (int x = 0; x < SCREEN_WIDTH; x++)
         {
-            uint8_t tileX = (scx + x) / 8;
-            uint8_t tileY = (scy + y) / 8;
+            // Adjust coordinates for scrolling
+            int adjustedX = (x + scx) % 256;
+            int adjustedY = (y + scy) % 256;
 
-            uint16_t tileId = memory.readByte(baseMapAddress + tileY * 32 + tileX);
-            uint16_t tileAddr = baseAddr + (addrMode ? tileId * 16 : ((int8_t)tileId + 128) * 16);
-            uint8_t color = getTilePixelColor(tileAddr, x % 8, y % 8);
+            // Calculate tile indices with adjusted coordinates
+            uint8_t tileX = adjustedX / 8;
+            uint8_t tileY = adjustedY / 8;
+
+            uint16_t tileMapAddress = baseMapAddress + tileY * 32 + tileX;
+            uint8_t tileIndex = memory.readByte(tileMapAddress);
+
+            // Adjust tileAddress calculation for signed addressing mode if necessary
+            uint16_t tileAddress;
+            if (addrMode)
+            {
+                tileAddress = baseAddr + tileIndex * 16;
+            }
+            else
+            {
+                // Interpret tileIndex as signed and adjust tile address
+                int8_t signedTileIndex = static_cast<int8_t>(tileIndex);
+                tileAddress = 0x9000 + signedTileIndex * 16;
+            }
+
+            // Fetch and draw the pixel
+            uint8_t colorIndex = getTilePixelColor(tileAddress, adjustedX % 8, adjustedY % 8);
+            uint8_t color = colorLookupTable[colorIndex];
             drawPixel(frameBuffer, x, y, color);
         }
     }
@@ -284,20 +307,10 @@ void PPU::updateSTATInterrupt()
         interruptRequested = true;
     }
 
-    // Check Mode 2 OAM interrupt
-    if ((currentMode == PPUMode::OAMSearch) && (STAT & 0x20))
-    {
-        interruptRequested = true;
-    }
-
-    // Check Mode 1 VBlank interrupt
-    if ((currentMode == PPUMode::VBlank) && (STAT & 0x10))
-    {
-        interruptRequested = true;
-    }
-
-    // Check Mode 0 HBlank interrupt
-    if ((currentMode == PPUMode::HBlank) && (STAT & 0x08))
+    // Check for mode-specific STAT interrupts
+    if (((currentMode == PPUMode::OAMSearch) && (STAT & 0x20)) ||
+        ((currentMode == PPUMode::VBlank) && (STAT & 0x10)) ||
+        ((currentMode == PPUMode::HBlank) && (STAT & 0x08)))
     {
         interruptRequested = true;
     }

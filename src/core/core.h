@@ -4,12 +4,23 @@
 #include "./cpu/cpu.h"
 #include "./ppu/ppu.h"
 #include "./memory/memory.h"
-#include "./input/input.h"
 #include "./timer/timer.h"
 
 struct Core
 {
 public:
+    typedef enum
+    {
+        Right = 0,
+        Left = 1,
+        Up = 2,
+        Down = 3,
+        A = 4,
+        B = 5,
+        Select = 6,
+        Start = 7
+    } Button;
+
     Core();
     ~Core();
 
@@ -26,13 +37,14 @@ public:
 
     uint8_t getButtonState();
     void setButtonState(Button button, bool pressed);
+    uint8_t getJoypadState() const;
 
 private:
     PPU ppu;
     Memory memory;
     CPU cpu;
-    Input input;
     Timer timer;
+    uint8_t joypadState;
 };
 
 #endif // CORE_H

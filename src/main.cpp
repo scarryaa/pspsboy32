@@ -115,8 +115,8 @@ void IRAM_ATTR renderGameBoyScreen()
 
 void processInput()
 {
-  // Read the button states and pass them to the emulator
-  // Map ESP32 GPIO pin states to Game Boy button states
+  // bool aButtonPressed = digitalRead(A_BUTTON_GPIO_PIN);
+  // core.setButtonState(Button::A, aButtonPressed);
 }
 
 void processAudio()
@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
   std::cout << "Reading ROM file..." << std::endl;
 
   // Read ROM file into memory
-  if (fileReader->open("roms/Dr. Mario (World).gb"))
+  if (fileReader->open("roms/blargg/cpu_instrs/individual/02-interrupts.gb"))
   {
     char *buffer = new char[0x8000];
 
@@ -215,26 +215,27 @@ int main(int argc, char *argv[])
 
   while (running)
   {
-    while (SDL_PollEvent(&e))
+    // Get input from the user
+    const uint8_t *keyboardState = SDL_GetKeyboardState(nullptr);
+
+    while (SDL_PollEvent(&e) != 0)
     {
+      // User requests quit
       if (e.type == SDL_QUIT)
       {
         running = false;
       }
     }
 
-    // Get input from the user
-    const uint8_t *keyboardState = SDL_GetKeyboardState(nullptr);
-
-    // Update the emulator input
-    core.setButtonState(Button::A, !keyboardState[SDL_SCANCODE_Z]);
-    core.setButtonState(Button::B, !keyboardState[SDL_SCANCODE_X]);
-    core.setButtonState(Button::Select, !keyboardState[SDL_SCANCODE_BACKSPACE]);
-    core.setButtonState(Button::Start, !keyboardState[SDL_SCANCODE_RETURN]);
-    core.setButtonState(Button::Right, !keyboardState[SDL_SCANCODE_RIGHT]);
-    core.setButtonState(Button::Left, !keyboardState[SDL_SCANCODE_LEFT]);
-    core.setButtonState(Button::Up, !keyboardState[SDL_SCANCODE_UP]);
-    core.setButtonState(Button::Down, !keyboardState[SDL_SCANCODE_DOWN]);
+    // Update input
+    core.setButtonState(Core::Button::Right, keyboardState[SDL_SCANCODE_RIGHT]);
+    core.setButtonState(Core::Button::Left, keyboardState[SDL_SCANCODE_LEFT]);
+    core.setButtonState(Core::Button::Up, keyboardState[SDL_SCANCODE_UP]);
+    core.setButtonState(Core::Button::Down, keyboardState[SDL_SCANCODE_DOWN]);
+    core.setButtonState(Core::Button::A, keyboardState[SDL_SCANCODE_Z]);
+    core.setButtonState(Core::Button::B, keyboardState[SDL_SCANCODE_X]);
+    core.setButtonState(Core::Button::Select, keyboardState[SDL_SCANCODE_A]);
+    core.setButtonState(Core::Button::Start, keyboardState[SDL_SCANCODE_S]);
 
     // Update emulator core
     core.update();
