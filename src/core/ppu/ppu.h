@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <cstring>
 #include <cstdbool>
+#include <vector>
 
 #define OAM_SEARCH_CYCLES 80
 #define PIXEL_TRANSFER_CYCLES 172
@@ -34,6 +35,17 @@
 
 #define OBP0 0xFF48
 #define OBP1 0xFF49
+
+#define BATCH_SIZE 256
+#define OAM_START 0xFE00
+
+struct Pixel
+{
+    int x, y;
+    uint8_t color;
+};
+
+extern std::vector<Pixel> pixelBatch;
 
 struct Sprite
 {
@@ -94,10 +106,14 @@ private:
     uint8_t getTilePixelColor(uint16_t address, uint8_t x, uint8_t y);
     bool isSpriteVisible(Sprite sprite);
     uint8_t getSpritePixelColor(Sprite sprite, int x, int y);
+    uint8_t getPaletteColor(uint8_t paletteRegister, uint8_t colorIndex);
+    void drawSpritePixel(int x, int y, uint8_t colorIndex, uint8_t attributes);
 
     void renderDebug();
     void drawBackground();
     void writeDMA(uint8_t value);
+    void flushBatch();
+    void flushSpriteBatch(std::vector<Pixel> &batch);
 
     bool frameProcessed; // Indicates whether the current frame has been processed
     Memory &memory;

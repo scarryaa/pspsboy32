@@ -1,8 +1,11 @@
 #include "ppu.h"
 
+std::vector<Pixel> pixelBatch;
+
 PPU::PPU(Memory &memory) : memory(memory)
 {
     reset();
+    pixelBatch = std::vector<Pixel>();
 }
 
 PPU::~PPU()
@@ -94,6 +97,24 @@ void PPU::update(int cycles)
     }
 }
 
+void PPU::flushBatch()
+{
+    for (const auto &pixel : pixelBatch)
+    {
+        drawPixel(frameBuffer, pixel.x, pixel.y, pixel.color);
+    }
+    pixelBatch.clear();
+}
+
+void PPU::flushSpriteBatch(std::vector<Pixel> &batch)
+{
+    for (const auto &pixel : batch)
+    {
+        drawPixel(frameBuffer, pixel.x, pixel.y, pixel.color);
+    }
+    batch.clear();
+}
+
 uint8_t PPU::readLY()
 {
     return memory.readByte(LY_ADDRESS);
@@ -176,65 +197,71 @@ uint8_t PPU::getSpritePixelColor(Sprite sprite, int x, int y)
     return colorLookupTable[colorIndex];
 }
 
+uint8_t PPU::getPaletteColor(uint8_t paletteRegister, uint8_t colorIndex)
+{
+    uint8_t palette = memory.readByte(paletteRegister);
+    uint8_t colorBits = (palette >> (colorIndex * 2)) & 0x03;
+
+    switch (colorBits)
+    {
+    case 0:
+        return 0xFF;
+    case 1:
+        return 0xB6;
+    case 2:
+        return 0x6D;
+    case 3:
+        return 0x00;
+    default:
+        return 0xFF;
+    }
+}
+
 void PPU::renderSprites()
 {
-    uint8_t spriteCount = 0;
-    uint16_t BASE_ADDR = OAM_BASE_ADDRESS;
-    uint8_t SPRITE_DATA_SIZE = 4;
-
-    if (!(memory.readByte(LCDC) && 0x02))
+    if (!(memory.readByte(LCDC) & 0x02))
         return;
 
-    // Load sprite data
+    uint8_t spriteHeight = 8;
+    bool is8x16 = memory.readByte(LCDC) & 0x04;
+
+    // Draw a sprite
     for (int i = 0; i < 40; i++)
     {
-        uint16_t spriteAddr = BASE_ADDR + (i * SPRITE_DATA_SIZE);
+        Sprite sprite;
+        sprite.y = memory.readByte(OAM_START + i * 4) - 16;
+        sprite.x = memory.readByte(OAM_START + i * 4 + 1) - 8;
+        sprite.tileNumber = memory.readByte(OAM_START + i * 4 + 2);
+        sprite.attributes = memory.readByte(OAM_START + i * 4 + 3);
 
-        Sprite tmp;
-        tmp.y = memory.readByte(spriteAddr);
-        tmp.x = memory.readByte(spriteAddr + 1);
-        tmp.tileNumber = memory.readByte(spriteAddr + 2);
-        tmp.attributes = memory.readByte(spriteAddr + 3);
+        if (!isSpriteVisible(sprite))
+            continue;
 
-        visibleSpriteData[i] = tmp;
-    }
+        std::vector<Pixel> spriteBatch;
 
-    uint8_t SPRITE_HEIGHT = (memory.readByte(LCDC) & 0x02) ? 16 : 8;
-    uint8_t SPRITE_WIDTH = 8;
-
-    // Render sprites
-    for (Sprite &sprite : visibleSpriteData)
-    {
-        if (isSpriteVisible(sprite))
+        // Draw a scanline of the sprite
+        for (int y = 0; y < spriteHeight; y++)
         {
-            for (int sx = 0; sx < SPRITE_WIDTH; sx++)
+            for (int x = 0; x < 8; x++)
             {
-                for (int sy = 0; sy < SPRITE_HEIGHT; sy++)
+                uint8_t colorIndex = getSpritePixelColor(sprite, x, y);
+                uint8_t color = getPaletteColor(OBP0, colorIndex);
+
+                // check if we are in bounds
+                if (x < 0 || x >= SCREEN_WIDTH || y < 0 || y >= SCREEN_HEIGHT)
+                    continue;
+
+                spriteBatch.push_back({sprite.x + x, sprite.y + y, color});
+
+                // Flush the batch if it's full
+                if (spriteBatch.size() == BATCH_SIZE)
                 {
-                    if (spriteCount >= 10)
-                        break;
-
-                    // check if we are in bounds
-                    if (sprite.x + sx - 8 < 0 || sprite.x + sx - 8 >= SCREEN_WIDTH)
-                        continue;
-
-                    if (sprite.y + sy - 16 < 0 || sprite.y + sy - 16 >= SCREEN_HEIGHT)
-                        continue;
-
-                    uint8_t colorIndex = getSpritePixelColor(sprite, sx, sy);
-                    uint8_t color = colorLookupTable[colorIndex];
-
-                    // if color is 0, it is transparent
-                    if (colorIndex == 0)
-                        continue;
-
-                    drawPixel(frameBuffer, sprite.x + sx - 8, sprite.y + sy - 16, color);
+                    flushSpriteBatch(spriteBatch);
                 }
             }
         }
 
-        if (spriteCount >= 10)
-            break;
+        flushSpriteBatch(spriteBatch);
     }
 }
 
@@ -307,15 +334,35 @@ void PPU::renderBackground()
             if (x < 0 || x >= SCREEN_WIDTH || y < 0 || y >= SCREEN_HEIGHT)
                 continue;
 
-            drawPixel(frameBuffer, x, y, color);
+            pixelBatch.push_back({x, y, color});
+
+            // Flush the batch if it's full
+            if (pixelBatch.size() == BATCH_SIZE)
+            {
+                flushBatch();
+            }
         }
     }
+
+    flushBatch();
 }
 
 void PPU::drawPixel(uint8_t *frameBuffer, int x, int y, uint8_t color)
 {
     uint32_t index = (y * SCREEN_WIDTH + x);
     frameBuffer[index] = color;
+}
+
+void PPU::drawSpritePixel(int x, int y, uint8_t colorIndex, uint8_t attributes)
+{
+    uint8_t paletteRegister = (attributes & 0x10) ? OBP1 : OBP0;
+    uint8_t color = getPaletteColor(paletteRegister, colorIndex);
+
+    // Draw the pixel if it's not transparent (index 0)
+    if (colorIndex != 0)
+    {
+        drawPixel(frameBuffer, x, y, color);
+    }
 }
 
 bool PPU::isFrameReady()
