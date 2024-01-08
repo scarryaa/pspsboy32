@@ -18,6 +18,7 @@ TFT_eSPI tft = TFT_eSPI();
 #include "./logger/logger.h"
 #include "./core/core.h"
 
+uint8_t previousFrameBuffer[160 * 144] = {0};
 Core core;
 std::unique_ptr<FileReader> fileReader;
 uint8_t lastFrameBuffer[160 * 144 * 2];
@@ -154,6 +155,11 @@ int main(int argc, char *argv[])
     return -1;
   }
 
+  // Create Debug window
+  SDL_Window *debugWindow = SDL_CreateWindow("Debug",
+                                             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                                             640, 480, SDL_WINDOW_SHOWN);
+
   // Create SDL window
   SDL_Window *window = SDL_CreateWindow("pspsboy32",
                                         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
@@ -171,6 +177,16 @@ int main(int argc, char *argv[])
   {
     std::cerr << "Renderer could not be created! SDL_Error: " << SDL_GetError() << std::endl;
     SDL_DestroyWindow(window);
+    SDL_Quit();
+    return -1;
+  }
+
+  // Create SDL debug renderer
+  SDL_Renderer *debugRenderer = SDL_CreateRenderer(debugWindow, -1, SDL_RENDERER_ACCELERATED);
+  if (debugRenderer == nullptr)
+  {
+    std::cerr << "Renderer could not be created! SDL_Error: " << SDL_GetError() << std::endl;
+    SDL_DestroyWindow(debugWindow);
     SDL_Quit();
     return -1;
   }
@@ -213,6 +229,14 @@ int main(int argc, char *argv[])
       144  // Frame buffer height
   );
 
+  SDL_Texture *debugTexture = SDL_CreateTexture(
+      renderer,
+      SDL_PIXELFORMAT_RGB332,
+      SDL_TEXTUREACCESS_STREAMING,
+      320, // Frame buffer width
+      480  // Frame buffer height
+  );
+
   while (running)
   {
     // Get input from the user
@@ -242,10 +266,26 @@ int main(int argc, char *argv[])
 
     if (core.isFrameReady())
     {
+      if (memcmp(previousFrameBuffer, core.getFrameBuffer(), sizeof(previousFrameBuffer)) == 0)
+      {
+        // Framebuffers are the same, skip rendering
+        continue;
+      }
+
+      // Framebuffers are not the same, update previousFrameBuffer and render
+      memcpy(previousFrameBuffer, core.getFrameBuffer(), sizeof(previousFrameBuffer));
+
       SDL_UpdateTexture(emulatorTexture, nullptr, core.getFrameBuffer(), 160 * sizeof(uint8_t));
       SDL_RenderClear(renderer);
       SDL_RenderCopy(renderer, emulatorTexture, nullptr, nullptr);
       SDL_RenderPresent(renderer);
+
+      // Render debug window
+      SDL_UpdateTexture(debugTexture, nullptr, core.getDebugFrameBuffer(), 160 * sizeof(uint8_t));
+      SDL_RenderClear(debugRenderer);
+      SDL_RenderCopy(debugRenderer, debugTexture, nullptr, nullptr);
+      SDL_RenderPresent(debugRenderer);
+
       core.resetFrameReady();
     }
   }

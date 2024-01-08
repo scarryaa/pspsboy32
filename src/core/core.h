@@ -28,6 +28,7 @@ public:
     void update();
     void shutdown();
     uint8_t *getFrameBuffer();
+    uint8_t *getDebugFrameBuffer();
 
     bool isFrameReady();
     void resetFrameReady();

@@ -9,7 +9,7 @@
 #define OAM_SEARCH_CYCLES 80
 #define PIXEL_TRANSFER_CYCLES 172
 #define H_BLANK_CYCLES 204
-#define V_BLANK_CYCLES 4560
+#define V_BLANK_CYCLES 456
 #define V_BLANK_SCANLINE_MAX 153
 
 #define SCREEN_WIDTH 160
@@ -31,6 +31,9 @@
 
 #define LY_ADDRESS 0xFF44
 #define LCDC 0xFF40
+
+#define OBP0 0xFF47
+#define OBP1 0xFF48
 
 struct Sprite
 {
@@ -68,12 +71,14 @@ public:
 
     // Gets a pointer to the frame buffer
     uint8_t *getFrameBuffer();
+    uint8_t *getDebugFrameBuffer();
     bool isFrameReady();
     void resetFrameReady();
     uint8_t readLY();
 
 private:
     uint8_t frameBuffer[SCREEN_SIZE]; // Frame buffer for pixel data
+    uint8_t debugFrameBuffer[SCREEN_SIZE];
     int cycleCounter;                 // Counts the cycles to determine the PPU's current state
     PPUMode currentMode;              // Current mode of the PPU
     int currentScanline;              // Current scanline being processed
@@ -90,6 +95,7 @@ private:
     bool isSpriteVisible(Sprite sprite);
     uint8_t getSpritePixelColor(Sprite sprite, int x, int y);
 
+    void renderDebug();
     void drawBackground();
     void writeDMA(uint8_t value);
 

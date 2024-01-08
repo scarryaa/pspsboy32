@@ -61,7 +61,7 @@ uint8_t Memory::readByte(uint16_t address)
         return IE;
     }
 
-    if (address < 0x4000)
+    if (address >= 0 && address < 0x4000)
     {
         // Read from fixed ROM bank
         return romBank[address];
@@ -88,12 +88,6 @@ uint8_t Memory::readByte(uint16_t address)
     }
     else if (address >= 0xFF00 && address < 0xFF80)
     {
-        // Read from I/O registers
-        if (address == 0xFF00)
-        {
-            // Read from P1 (Joypad)
-            return ioRegisters[0x00];
-        }
         return ioRegisters[address - 0xFF00];
     }
     else if (address >= 0xFF80)
@@ -114,6 +108,12 @@ uint8_t Memory::readByte(uint16_t address)
     else if (address >= 0xFEA0 && address < 0xFF00)
     {
         // Unusable memory
+        return 0xFF;
+    }
+    else
+    {
+        printf("Unmapped memory address: %04X\n", address);
+        // Unmapped memory
         return 0xFF;
     }
 

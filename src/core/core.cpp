@@ -25,6 +25,11 @@ void Core::update()
     ppu.update(cyclesThisUpdate);
 }
 
+uint8_t *Core::getDebugFrameBuffer()
+{
+    return ppu.getDebugFrameBuffer();
+}
+
 uint8_t *Core::getFrameBuffer()
 {
     return ppu.getFrameBuffer();

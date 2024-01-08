@@ -20,7 +20,7 @@ void PPU::reset()
 
 void PPU::update(int cycles)
 {
-    // bool lcdEnabled = memory.readByte(LCDC) & 0x80 != 0;
+    bool lcdEnabled = memory.readByte(LCDC) & 0x80 != 0;
 
     // if (!lcdEnabled)
     // {
@@ -99,6 +99,11 @@ uint8_t PPU::readLY()
     return memory.readByte(LY_ADDRESS);
 }
 
+uint8_t *PPU::getDebugFrameBuffer()
+{
+    return debugFrameBuffer;
+}
+
 uint8_t *PPU::getFrameBuffer()
 {
     return frameBuffer;
@@ -119,6 +124,9 @@ void PPU::renderScanline()
 
     // Render window
     renderWindow();
+
+    // Render debug
+    renderDebug();
 }
 
 bool PPU::isSpriteVisible(Sprite sprite)
@@ -158,6 +166,7 @@ uint8_t PPU::getSpritePixelColor(Sprite sprite, int x, int y)
     uint8_t loBit = (lo >> bitIndex) & 0x01;
     uint8_t hiBit = (hi >> bitIndex) & 0x01;
     uint8_t colorIndex = (hiBit << 1) | loBit;
+
     return colorLookupTable[colorIndex];
 }
 
@@ -181,7 +190,7 @@ void PPU::renderSprites()
         visibleSpriteData[i] = tmp;
     }
 
-    uint8_t SPRITE_HEIGHT = memory.readByte(LCDC) & 0x02 >> 1 ? 16 : 8;
+    uint8_t SPRITE_HEIGHT = (memory.readByte(LCDC) & 0x02) ? 16 : 8;
     uint8_t SPRITE_WIDTH = 8;
 
     // Render sprites
@@ -193,16 +202,32 @@ void PPU::renderSprites()
             {
                 for (int sy = 0; sy < SPRITE_HEIGHT; sy++)
                 {
-                    uint8_t colorIndex = getSpritePixelColor(sprite, sx, sy);
+                    if (spriteCount >= 10)
+                        break;
 
+                    // check if we are in bounds
+                    if (sprite.x + sx - 8 < 0 || sprite.x + sx - 8 >= SCREEN_WIDTH)
+                        continue;
+
+                    if (sprite.y + sy - 16 < 0 || sprite.y + sy - 16 >= SCREEN_HEIGHT)
+                        continue;
+
+                    uint8_t colorIndex = getSpritePixelColor(sprite, sx, sy);
+                    uint8_t color = colorLookupTable[colorIndex];
+
+                    // if color is 0, it is transparent
                     if (colorIndex == 0)
                         continue;
-                    uint8_t color = colorLookupTable[colorIndex];
+
                     drawPixel(frameBuffer, sprite.x + sx - 8, sprite.y + sy - 16, color);
                 }
             }
         }
     }
+}
+
+void PPU::renderDebug()
+{
 }
 
 void PPU::renderWindow()
@@ -261,6 +286,11 @@ void PPU::renderBackground()
 
             uint8_t colorIndex = getTilePixelColor(tileAddress, adjustedX % 8, adjustedY % 8);
             uint8_t color = colorLookupTable[colorIndex];
+
+            // check if we are in bounds
+            if (x < 0 || x >= SCREEN_WIDTH || y < 0 || y >= SCREEN_HEIGHT)
+                continue;
+
             drawPixel(frameBuffer, x, y, color);
         }
     }
