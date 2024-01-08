@@ -62,66 +62,91 @@ void Core::loadRom(char *data, size_t size)
 
 void Core::setButtonState(Button button, bool pressed)
 {
-    switch (button)
+    // read bits 4-7 of P1 to see if we are selecting buttons or directions
+    uint8_t p1 = memory.readByte(0xFF00);
+    bool selectingButtons = (p1 & 0x20) == 0;
+    bool selectingDirections = (p1 & 0x10) == 0;
+
+    if (selectingButtons)
     {
-    case Button::A:
-        if (pressed)
-            joypadState &= ~(1 << 0); // Clear bit 0 for A
-        else
-            joypadState |= (1 << 0); // Set bit 0 for A
-        break;
+        switch (button)
+        {
+        case Button::A:
+            if (pressed)
+                joypadState &= ~(1 << 0); // Clear bit 0 for A
+            else
+                joypadState |= (1 << 0); // Set bit 0 for A
+            break;
 
-    case Button::B:
-        if (pressed)
-            joypadState &= ~(1 << 1); // Clear bit 1 for B
-        else
-            joypadState |= (1 << 1); // Set bit 1 for B
-        break;
+        case Button::B:
+            if (pressed)
+                joypadState &= ~(1 << 1); // Clear bit 1 for B
+            else
+                joypadState |= (1 << 1); // Set bit 1 for B
+            break;
 
-    case Button::Select:
-        if (pressed)
-            joypadState &= ~(1 << 2); // Clear bit 2 for Select
-        else
-            joypadState |= (1 << 2); // Set bit 2 for Select
-        break;
+        case Button::Select:
+            if (pressed)
+                joypadState &= ~(1 << 2); // Clear bit 2 for Select
+            else
+                joypadState |= (1 << 2); // Set bit 2 for Select
+            break;
 
-    case Button::Start:
-        if (pressed)
-            joypadState &= ~(1 << 3); // Clear bit 3 for Start
-        else
-            joypadState |= (1 << 3); // Set bit 3 for Start
-        break;
+        case Button::Start:
+            if (pressed)
+                joypadState &= ~(1 << 3); // Clear bit 3 for Start
+            else
+                joypadState |= (1 << 3); // Set bit 3 for Start
+            break;
+        }
 
-    case Button::Right:
-        if (pressed)
-            joypadState &= ~(1 << 4); // Clear bit 4 for Right
-        else
-            joypadState |= (1 << 4); // Set bit 4 for Right
-        break;
+        // set bit 5 to 0 to indicate that a button is pressed
+        joypadState &= ~(1 << 5);
 
-    case Button::Left:
-        if (pressed)
-            joypadState &= ~(1 << 5); // Clear bit 5 for Left
-        else
-            joypadState |= (1 << 5); // Set bit 5 for Left
-        break;
+        // set bit 4 to 1 to indicate that a button is pressed
+        joypadState |= (1 << 4);
+    }
+    else if (selectingDirections)
+    {
+        switch (button)
+        {
+        case Button::Right:
+            if (pressed)
+                joypadState &= ~(1 << 0); // Clear bit 0 for Right
+            else
+                joypadState |= (1 << 0); // Set bit 0 for Right
+            break;
 
-    case Button::Up:
-        if (pressed)
-            joypadState &= ~(1 << 6); // Clear bit 6 for Up
-        else
-            joypadState |= (1 << 6); // Set bit 6 for Up
-        break;
+        case Button::Left:
+            if (pressed)
+                joypadState &= ~(1 << 1); // Clear bit 1 for Left
+            else
+                joypadState |= (1 << 1); // Set bit 1 for Left
+            break;
 
-    case Button::Down:
-        if (pressed)
-            joypadState &= ~(1 << 7); // Clear bit 7 for Down
-        else
-            joypadState |= (1 << 7); // Set bit 7 for Down
-        break;
+        case Button::Up:
+            if (pressed)
+                joypadState &= ~(1 << 2); // Clear bit 2 for Up
+            else
+                joypadState |= (1 << 2); // Set bit 2 for Up
+            break;
+
+        case Button::Down:
+            if (pressed)
+                joypadState &= ~(1 << 3); // Clear bit 3 for Down
+            else
+                joypadState |= (1 << 3); // Set bit 3 for Down
+            break;
+        }
+
+        // set bit 4 to 0 to indicate that a direction key is pressed
+        joypadState &= ~(1 << 4);
+
+        // set bit 5 to 1 to indicate that a direction key is pressed
+        joypadState |= (1 << 5);
     }
 
-    // Update the joypad state in memory
+    // write joypadState to P1
     memory.writeByte(0xFF00, joypadState);
 }
 

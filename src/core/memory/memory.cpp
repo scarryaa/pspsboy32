@@ -89,6 +89,11 @@ uint8_t Memory::readByte(uint16_t address)
     else if (address >= 0xFF00 && address < 0xFF80)
     {
         // Read from I/O registers
+        if (address == 0xFF00)
+        {
+            // Read from P1 (Joypad)
+            return ioRegisters[0x00];
+        }
         return ioRegisters[address - 0xFF00];
     }
     else if (address >= 0xFF80)
