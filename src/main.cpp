@@ -186,7 +186,7 @@ int main(int argc, char *argv[])
   std::cout << "Reading ROM file..." << std::endl;
 
   // Read ROM file into memory
-  if (fileReader->open("roms/blargg/cpu_instrs/individual/02-interrupts.gb"))
+  if (fileReader->open("C:/Users/Ficis/OneDrive/Desktop/pspsboy32/roms/Dr. Mario (World).gb"))
   {
     char *buffer = new char[0x8000];
 
@@ -242,19 +242,10 @@ int main(int argc, char *argv[])
 
     if (core.isFrameReady())
     {
-      // Update texture with the frame buffer data
-      SDL_UpdateTexture(emulatorTexture, nullptr, core.getFrameBuffer(), SCREEN_WIDTH);
-
-      // Clear screen
+      SDL_UpdateTexture(emulatorTexture, nullptr, core.getFrameBuffer(), 160 * sizeof(uint8_t));
       SDL_RenderClear(renderer);
-
-      // Render the emulator screen buffer to the window
       SDL_RenderCopy(renderer, emulatorTexture, nullptr, nullptr);
-
-      // Update screen
       SDL_RenderPresent(renderer);
-
-      // Reset the frame ready flag in the core
       core.resetFrameReady();
     }
   }

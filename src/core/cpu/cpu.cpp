@@ -636,23 +636,18 @@ void CPU::handleInterrupts()
             switch (i)
             {
             case 0:
-                printf("V-Blank interrupt\n");
                 PC = 0x0040; // V-Blank
                 break;
             case 1:
-                printf("LCD STAT interrupt\n");
                 PC = 0x0048; // LCD STAT
                 break;
             case 2:
-                printf("Timer interrupt\n");
                 PC = 0x0050; // Timer
                 break;
             case 3:
-                printf("Serial interrupt\n");
                 PC = 0x0058; // Serial
                 break;
             case 4:
-                printf("Joypad interrupt\n");
                 PC = 0x0060; // Joypad
                 break;
             }

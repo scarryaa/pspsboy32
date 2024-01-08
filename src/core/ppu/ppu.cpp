@@ -49,6 +49,7 @@ void PPU::update(int cycles)
         if (cycleCounter >= PIXEL_TRANSFER_CYCLES)
         {
             cycleCounter -= PIXEL_TRANSFER_CYCLES;
+            renderScanline();
             currentMode = PPUMode::HBlank;
             updateSTATInterrupt(); // Update STAT at the start of HBlank
         }
@@ -64,9 +65,7 @@ void PPU::update(int cycles)
             if (currentScanline == SCREEN_HEIGHT)
             {
                 currentMode = PPUMode::VBlank;
-                printf("VBlank\n");
-                memory.writeByte(0xFF0F, memory.readByte(0xFF0F) | 0x01); // Set VBlank interrupt flag
-                updateSTATInterrupt();                                    // Update STAT at the start of VBlank
+                updateSTATInterrupt(); // Update STAT at the start of VBlank
             }
             else
             {
@@ -76,6 +75,7 @@ void PPU::update(int cycles)
         }
         break;
     case PPUMode::VBlank:
+        memory.writeByte(0xFF0F, memory.readByte(0xFF0F) | 0x01);          // Set VBlank interrupt flag
         memory.writeByte(0xFF41, (memory.readByte(0xFF41) & 0xFC) | 0x01); // Set mode flag to VBlank
         if (cycleCounter >= V_BLANK_CYCLES)
         {
@@ -92,8 +92,6 @@ void PPU::update(int cycles)
         }
         break;
     }
-
-    renderScanline();
 }
 
 uint8_t PPU::readLY()
@@ -117,7 +115,7 @@ void PPU::renderScanline()
     renderBackground();
 
     // Render sprites
-    // renderSprites();
+    renderSprites();
 
     // Render window
     renderWindow();
@@ -241,18 +239,15 @@ void PPU::renderBackground()
     {
         for (int x = 0; x < SCREEN_WIDTH; x++)
         {
-            // Adjust coordinates for scrolling
             int adjustedX = (x + scx) % 256;
             int adjustedY = (y + scy) % 256;
 
-            // Calculate tile indices with adjusted coordinates
             uint8_t tileX = adjustedX / 8;
             uint8_t tileY = adjustedY / 8;
 
             uint16_t tileMapAddress = baseMapAddress + tileY * 32 + tileX;
             uint8_t tileIndex = memory.readByte(tileMapAddress);
 
-            // Adjust tileAddress calculation for signed addressing mode if necessary
             uint16_t tileAddress;
             if (addrMode)
             {
@@ -260,12 +255,10 @@ void PPU::renderBackground()
             }
             else
             {
-                // Interpret tileIndex as signed and adjust tile address
                 int8_t signedTileIndex = static_cast<int8_t>(tileIndex);
                 tileAddress = 0x9000 + signedTileIndex * 16;
             }
 
-            // Fetch and draw the pixel
             uint8_t colorIndex = getTilePixelColor(tileAddress, adjustedX % 8, adjustedY % 8);
             uint8_t color = colorLookupTable[colorIndex];
             drawPixel(frameBuffer, x, y, color);

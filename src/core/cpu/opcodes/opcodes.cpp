@@ -1709,7 +1709,6 @@ uint8_t CPU::LDH_mem_n_A()
 uint8_t CPU::LDH_A_mem_n()
 {
     uint8_t address = fetchInstruction();
-    printf("LDH A, (0xFF00 + 0x%02X)\n", address);
     A = memory.readByte(0xFF00 + address);
     return 12;
 }
