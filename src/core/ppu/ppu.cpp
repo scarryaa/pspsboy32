@@ -146,6 +146,12 @@ bool PPU::isSpriteVisible(Sprite sprite)
 uint8_t PPU::getSpritePixelColor(Sprite sprite, int x, int y)
 {
     uint8_t _LCDC = memory.readByte(LCDC);
+
+    if (sprite.attributes & 0x20)
+        x = 7 - x;
+    if (sprite.attributes & 0x40)
+        y = 7 - y;
+
     bool is8x16 = (_LCDC & 0x02) >> 1;
     uint8_t tileIndex = sprite.tileNumber;
     if (is8x16)
@@ -175,6 +181,9 @@ void PPU::renderSprites()
     uint8_t spriteCount = 0;
     uint16_t BASE_ADDR = OAM_BASE_ADDRESS;
     uint8_t SPRITE_DATA_SIZE = 4;
+
+    if (!(memory.readByte(LCDC) && 0x02))
+        return;
 
     // Load sprite data
     for (int i = 0; i < 40; i++)
@@ -223,11 +232,15 @@ void PPU::renderSprites()
                 }
             }
         }
+
+        if (spriteCount >= 10)
+            break;
     }
 }
 
 void PPU::renderDebug()
 {
+    drawPixel(debugFrameBuffer, 0, 0, 3);
 }
 
 void PPU::renderWindow()
@@ -248,6 +261,9 @@ uint8_t PPU::getTilePixelColor(uint16_t address, uint8_t x, uint8_t y)
 
 void PPU::renderBackground()
 {
+    if (!(memory.readByte(LCDC) & 0x01))
+        return;
+
     uint8_t scx = memory.readByte(SCX_REGISTER);
     uint8_t scy = memory.readByte(SCY_REGISTER);
 

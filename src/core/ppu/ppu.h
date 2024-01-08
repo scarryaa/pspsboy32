@@ -32,8 +32,8 @@
 #define LY_ADDRESS 0xFF44
 #define LCDC 0xFF40
 
-#define OBP0 0xFF47
-#define OBP1 0xFF48
+#define OBP0 0xFF48
+#define OBP1 0xFF49
 
 struct Sprite
 {
