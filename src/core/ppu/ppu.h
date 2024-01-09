@@ -33,6 +33,7 @@
 #define LY_ADDRESS 0xFF44
 #define LCDC 0xFF40
 
+#define BGP 0xFF47
 #define OBP0 0xFF48
 #define OBP1 0xFF49
 
@@ -43,6 +44,8 @@ struct Pixel
 {
     int x, y;
     uint8_t color;
+    uint8_t colorIndex;
+    uint8_t attributes;
 };
 
 extern std::vector<Pixel> pixelBatch;
@@ -106,7 +109,7 @@ private:
     uint8_t getTilePixelColor(uint16_t address, uint8_t x, uint8_t y);
     bool isSpriteVisible(Sprite sprite);
     uint8_t getSpritePixelColor(Sprite sprite, int x, int y);
-    uint8_t getPaletteColor(uint8_t paletteRegister, uint8_t colorIndex);
+    uint8_t getPaletteColor(uint16_t paletteRegister, uint8_t colorIndex);
     void drawSpritePixel(int x, int y, uint8_t colorIndex, uint8_t attributes);
 
     void renderDebug();
@@ -119,7 +122,7 @@ private:
     Memory &memory;
 
     uint8_t tileData[16]; // Buffer to hold tile data for one tile
-    uint8_t colorLookupTable[4] = {0xFF, 0xB6, 0x6D, 0x00};
+    uint8_t colorLookupTable[4] = {0xFF, 0x77, 0x6D, 0x00};
 };
 
 #endif // PPU_H

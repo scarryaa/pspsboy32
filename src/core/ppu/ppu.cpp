@@ -35,7 +35,6 @@ void PPU::update(int cycles)
     // }
 
     cycleCounter += cycles;
-
     switch (currentMode)
     {
     case PPUMode::OAMSearch:
@@ -197,7 +196,7 @@ uint8_t PPU::getSpritePixelColor(Sprite sprite, int x, int y)
     return colorLookupTable[colorIndex];
 }
 
-uint8_t PPU::getPaletteColor(uint8_t paletteRegister, uint8_t colorIndex)
+uint8_t PPU::getPaletteColor(uint16_t paletteRegister, uint8_t colorIndex)
 {
     uint8_t palette = memory.readByte(paletteRegister);
     uint8_t colorBits = (palette >> (colorIndex * 2)) & 0x03;
@@ -224,6 +223,10 @@ void PPU::renderSprites()
 
     uint8_t spriteHeight = 8;
     bool is8x16 = memory.readByte(LCDC) & 0x04;
+    if (is8x16)
+    {
+        spriteHeight = 16;
+    }
 
     // Draw a sprite
     for (int i = 0; i < 40; i++)
@@ -244,12 +247,14 @@ void PPU::renderSprites()
         {
             for (int x = 0; x < 8; x++)
             {
+                int screenX = sprite.x + x;
+                int screenY = sprite.y + y;
+
+                if (screenX < 0 || screenX >= SCREEN_WIDTH || screenY < 0 || screenY >= SCREEN_HEIGHT)
+                    continue;
+
                 uint8_t colorIndex = getSpritePixelColor(sprite, x, y);
                 uint8_t color = getPaletteColor(OBP0, colorIndex);
-
-                // check if we are in bounds
-                if (x < 0 || x >= SCREEN_WIDTH || y < 0 || y >= SCREEN_HEIGHT)
-                    continue;
 
                 spriteBatch.push_back({sprite.x + x, sprite.y + y, color});
 
@@ -294,53 +299,48 @@ void PPU::renderBackground()
     uint8_t scx = memory.readByte(SCX_REGISTER);
     uint8_t scy = memory.readByte(SCY_REGISTER);
 
-    uint16_t tile_data_addr1 = 0x8800;
-
     bool addrMode = memory.readByte(0xFF40) & 0x10;
     uint16_t baseAddr = addrMode ? TILE_DATA_0_BASE_ADDRESS : TILE_DATA_1_BASE_ADDRESS;
 
     bool useTileMap1 = memory.readByte(LCDC) & 0x08 != 0;
     uint16_t baseMapAddress = useTileMap1 ? TILE_MAP_0_BASE_ADDRESS : TILE_MAP_1_BASE_ADDRESS;
 
-    // Draw a tile
-    for (int y = 0; y < SCREEN_HEIGHT; y++)
+    int y = currentScanline; // Use the current scanline
+    for (int x = 0; x < SCREEN_WIDTH; x++)
     {
-        for (int x = 0; x < SCREEN_WIDTH; x++)
+        int adjustedX = (x + scx) % 256;
+        int adjustedY = (y + scy) % 256;
+
+        uint8_t tileX = adjustedX / 8;
+        uint8_t tileY = adjustedY / 8;
+
+        uint16_t tileMapAddress = baseMapAddress + tileY * 32 + tileX;
+        uint8_t tileIndex = memory.readByte(tileMapAddress);
+
+        uint16_t tileAddress;
+        if (addrMode)
         {
-            int adjustedX = (x + scx) % 256;
-            int adjustedY = (y + scy) % 256;
+            tileAddress = baseAddr + tileIndex * 16;
+        }
+        else
+        {
+            int8_t signedTileIndex = static_cast<int8_t>(tileIndex);
+            tileAddress = 0x9000 + signedTileIndex * 16;
+        }
 
-            uint8_t tileX = adjustedX / 8;
-            uint8_t tileY = adjustedY / 8;
+        uint8_t colorIndex = getTilePixelColor(tileAddress, adjustedX % 8, adjustedY % 8);
+        uint8_t color = getPaletteColor(BGP, colorIndex);
 
-            uint16_t tileMapAddress = baseMapAddress + tileY * 32 + tileX;
-            uint8_t tileIndex = memory.readByte(tileMapAddress);
+        // check if we are in bounds
+        if (x < 0 || x >= SCREEN_WIDTH || y < 0 || y >= SCREEN_HEIGHT)
+            continue;
 
-            uint16_t tileAddress;
-            if (addrMode)
-            {
-                tileAddress = baseAddr + tileIndex * 16;
-            }
-            else
-            {
-                int8_t signedTileIndex = static_cast<int8_t>(tileIndex);
-                tileAddress = 0x9000 + signedTileIndex * 16;
-            }
+        pixelBatch.push_back({x, y, color});
 
-            uint8_t colorIndex = getTilePixelColor(tileAddress, adjustedX % 8, adjustedY % 8);
-            uint8_t color = colorLookupTable[colorIndex];
-
-            // check if we are in bounds
-            if (x < 0 || x >= SCREEN_WIDTH || y < 0 || y >= SCREEN_HEIGHT)
-                continue;
-
-            pixelBatch.push_back({x, y, color});
-
-            // Flush the batch if it's full
-            if (pixelBatch.size() == BATCH_SIZE)
-            {
-                flushBatch();
-            }
+        // Flush the batch if it's full
+        if (pixelBatch.size() == BATCH_SIZE)
+        {
+            flushBatch();
         }
     }
 
@@ -355,14 +355,13 @@ void PPU::drawPixel(uint8_t *frameBuffer, int x, int y, uint8_t color)
 
 void PPU::drawSpritePixel(int x, int y, uint8_t colorIndex, uint8_t attributes)
 {
+    // Skip transparent pixels (color index 0)
+    if (colorIndex == 0)
+        return;
+
     uint8_t paletteRegister = (attributes & 0x10) ? OBP1 : OBP0;
     uint8_t color = getPaletteColor(paletteRegister, colorIndex);
-
-    // Draw the pixel if it's not transparent (index 0)
-    if (colorIndex != 0)
-    {
-        drawPixel(frameBuffer, x, y, color);
-    }
+    drawPixel(frameBuffer, x, y, color);
 }
 
 bool PPU::isFrameReady()

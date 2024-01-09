@@ -145,6 +145,24 @@ void loop()
 #include "file-reader/desktop-file-reader.h"
 #include <SDL.h>
 #include <iostream>
+#include <chrono>
+
+int frameCount = 0;
+auto lastTime = std::chrono::high_resolution_clock::now();
+
+void updateFrameRate()
+{
+  frameCount++;
+  auto currentTime = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed = currentTime - lastTime;
+
+  if (elapsed.count() >= 1.0)
+  { // One second has passed
+    std::cout << "Frame Rate: " << frameCount << " FPS" << std::endl;
+    frameCount = 0;
+    lastTime = currentTime;
+  }
+}
 
 int main(int argc, char *argv[])
 {
@@ -287,6 +305,9 @@ int main(int argc, char *argv[])
       SDL_RenderPresent(debugRenderer);
 
       core.resetFrameReady();
+
+      // Update frame rate
+      updateFrameRate();
     }
   }
 
