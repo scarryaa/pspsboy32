@@ -597,6 +597,11 @@ uint8_t CPU::executeCycle()
     }
     else
     {
+        // Check if interrupt flag is set, unhalt if so
+        if (memory.readByte(0xFF0F) != 0x00)
+        {
+            halted = false;
+        }
         cycles = 4;
     }
 
