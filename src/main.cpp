@@ -220,7 +220,7 @@ int main(int argc, char *argv[])
   std::cout << "Reading ROM file..." << std::endl;
 
   // Read ROM file into memory
-  if (fileReader->open("roms/Dr. Mario (World).gb"))
+  if (fileReader->open("C:/Users/Ficis/OneDrive/Desktop/pspsboy32/roms/Dr. Mario (World).gb"))
   {
     char *buffer = new char[0x8000];
 

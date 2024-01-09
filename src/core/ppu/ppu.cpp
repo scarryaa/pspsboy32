@@ -109,7 +109,7 @@ void PPU::flushSpriteBatch(std::vector<Pixel> &batch)
 {
     for (const auto &pixel : batch)
     {
-        drawPixel(frameBuffer, pixel.x, pixel.y, pixel.color);
+        drawSpritePixel(pixel.x, pixel.y, pixel.colorIndex, pixel.color, pixel.attributes);
     }
     batch.clear();
 }
@@ -193,7 +193,7 @@ uint8_t PPU::getSpritePixelColor(Sprite sprite, int x, int y)
     uint8_t hiBit = (hi >> bitIndex) & 0x01;
     uint8_t colorIndex = (hiBit << 1) | loBit;
 
-    return colorLookupTable[colorIndex];
+    return colorIndex;
 }
 
 uint8_t PPU::getPaletteColor(uint16_t paletteRegister, uint8_t colorIndex)
@@ -254,9 +254,9 @@ void PPU::renderSprites()
                     continue;
 
                 uint8_t colorIndex = getSpritePixelColor(sprite, x, y);
-                uint8_t color = getPaletteColor(OBP0, colorIndex);
+                uint8_t color = getPaletteColor((sprite.attributes & 0x10) ? OBP1 : OBP0, colorIndex);
 
-                spriteBatch.push_back({sprite.x + x, sprite.y + y, color});
+                spriteBatch.push_back({sprite.x + x, sprite.y + y, color, colorIndex, sprite.attributes});
 
                 // Flush the batch if it's full
                 if (spriteBatch.size() == BATCH_SIZE)
@@ -353,14 +353,12 @@ void PPU::drawPixel(uint8_t *frameBuffer, int x, int y, uint8_t color)
     frameBuffer[index] = color;
 }
 
-void PPU::drawSpritePixel(int x, int y, uint8_t colorIndex, uint8_t attributes)
+void PPU::drawSpritePixel(int x, int y, uint8_t colorIndex, uint8_t color, uint8_t attributes)
 {
     // Skip transparent pixels (color index 0)
     if (colorIndex == 0)
         return;
 
-    uint8_t paletteRegister = (attributes & 0x10) ? OBP1 : OBP0;
-    uint8_t color = getPaletteColor(paletteRegister, colorIndex);
     drawPixel(frameBuffer, x, y, color);
 }
 

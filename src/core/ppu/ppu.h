@@ -110,7 +110,7 @@ private:
     bool isSpriteVisible(Sprite sprite);
     uint8_t getSpritePixelColor(Sprite sprite, int x, int y);
     uint8_t getPaletteColor(uint16_t paletteRegister, uint8_t colorIndex);
-    void drawSpritePixel(int x, int y, uint8_t colorIndex, uint8_t attributes);
+    void drawSpritePixel(int x, int y, uint8_t colorIndex, uint8_t color, uint8_t attributes);
 
     void renderDebug();
     void drawBackground();
