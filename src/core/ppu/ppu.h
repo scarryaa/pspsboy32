@@ -37,7 +37,7 @@
 #define OBP0 0xFF48
 #define OBP1 0xFF49
 
-#define BATCH_SIZE 256
+#define BATCH_SIZE 160
 #define OAM_START 0xFE00
 
 struct Pixel

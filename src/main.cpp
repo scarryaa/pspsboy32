@@ -294,13 +294,11 @@ int main(int argc, char *argv[])
       memcpy(previousFrameBuffer, core.getFrameBuffer(), sizeof(previousFrameBuffer));
 
       SDL_UpdateTexture(emulatorTexture, nullptr, core.getFrameBuffer(), 160 * sizeof(uint8_t));
-      SDL_RenderClear(renderer);
       SDL_RenderCopy(renderer, emulatorTexture, nullptr, nullptr);
       SDL_RenderPresent(renderer);
 
       // Render debug window
       SDL_UpdateTexture(debugTexture, nullptr, core.getDebugFrameBuffer(), 160 * sizeof(uint8_t));
-      SDL_RenderClear(debugRenderer);
       SDL_RenderCopy(debugRenderer, debugTexture, nullptr, nullptr);
       SDL_RenderPresent(debugRenderer);
 

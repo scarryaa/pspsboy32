@@ -581,7 +581,7 @@ uint8_t CPU::executeExtendedInstruction(uint8_t opcode)
 
 uint8_t CPU::executeCycle()
 {
-    logStatus();
+    // logStatus();
     uint8_t cycles = 0;
 
     // Fetch and execute instruction if not halted or stopped
