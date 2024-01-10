@@ -3,13 +3,14 @@
 
 #include <cstdint>
 #include "../../logger/logger.h"
+#include "../cartridge/cartridge.hpp"
 
 #define OAM_START_ADDRESS 0xFE00
 
 class Memory
 {
 public:
-    Memory();
+    Memory(Cartridge &cartridge);
     ~Memory();
 
     uint8_t readByte(uint16_t address);
@@ -29,6 +30,8 @@ private:
 
     uint8_t IE; // Interrupt enable register
     uint8_t IF; // Interrupt flag register
+
+    Cartridge *cartridge;
 };
 
 #endif // MEMORY_H

@@ -1,6 +1,6 @@
 #include "core.h"
 
-Core::Core() : cpu(memory, timer), ppu(memory), timer(memory), joypadState(0xFF)
+Core::Core() : cpu(memory, timer), ppu(memory), timer(memory), joypadState(0xFF), memory(cartridge)
 {
 }
 

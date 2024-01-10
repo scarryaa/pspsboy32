@@ -645,7 +645,6 @@ void CPU::handleInterrupts()
                 PC = 0x0040; // V-Blank
                 break;
             case 1:
-                printf("LCD STAT\n");
                 PC = 0x0048; // LCD STAT
                 break;
             case 2:

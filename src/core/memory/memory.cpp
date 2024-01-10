@@ -1,6 +1,6 @@
 #include "memory.h"
 
-Memory::Memory()
+Memory::Memory(Cartridge &cartridge) : cartridge(&cartridge)
 {
     romBank = new uint8_t[0x4000];
     switchableRomBank = new uint8_t[0x4000];
@@ -18,7 +18,6 @@ Memory::Memory()
 // load rom from data
 void Memory::loadRom(char *data, size_t size)
 {
-    Logger logger;
     // Load ROM implementation
     for (int i = 0; i < 0x4000; i++)
     {

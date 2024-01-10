@@ -5,6 +5,7 @@
 #include "./ppu/ppu.h"
 #include "./memory/memory.h"
 #include "./timer/timer.h"
+#include "./cartridge/cartridge.hpp"
 
 struct Core
 {
@@ -46,6 +47,7 @@ private:
     CPU cpu;
     Timer timer;
     uint8_t joypadState;
+    Cartridge cartridge;
 };
 
 #endif // CORE_H

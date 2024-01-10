@@ -89,6 +89,7 @@ void PPU::update(int cycles)
     case PPUMode::VBlank:
         memory.writeByte(0xFF0F, memory.readByte(0xFF0F) | 0x01);          // Set VBlank interrupt flag
         memory.writeByte(0xFF41, (memory.readByte(0xFF41) & 0xFC) | 0x01); // Set mode flag to VBlank
+
         // reset the window line counter
         memory.writeByte(WY_REGISTER, 0);
 
@@ -294,7 +295,7 @@ void PPU::renderSprites()
                 // Check for sprite y-flip
                 if (sprite.attributes & 0x40)
                 {
-                    screenY = sprite.y + spriteHeight - y - 1;
+                    screenY = sprite.y + spriteHeight - 1 - y;
                 }
 
                 // Check for sprite x-flip
@@ -347,21 +348,21 @@ void PPU::renderWindow()
         return;
 
     // Check if the window is visible on the current scanline
-    if (currentScanline < memory.readByte(WY_REGISTER))
+    if (currentScanline == memory.readByte(WY_REGISTER))
         return;
-
-    bool addrMode = memory.readByte(0xFF40) & 0x10;
-    uint16_t baseAddr = addrMode ? TILE_DATA_0_BASE_ADDRESS : TILE_DATA_1_BASE_ADDRESS;
-
-    bool useTileMap1 = memory.readByte(LCDC) & 0x40;
-    uint16_t baseMapAddress = useTileMap1 ? TILE_MAP_1_BASE_ADDRESS : TILE_MAP_0_BASE_ADDRESS;
 
     for (int x = 0; x < SCREEN_WIDTH; x++)
     {
+        bool addrMode = memory.readByte(0xFF40) & 0x10;
+        uint16_t baseAddr = addrMode ? TILE_DATA_0_BASE_ADDRESS : TILE_DATA_1_BASE_ADDRESS;
+
+        bool useTileMap1 = !(memory.readByte(LCDC) & 0x40);
+        uint16_t baseMapAddress = useTileMap1 ? TILE_MAP_1_BASE_ADDRESS : TILE_MAP_0_BASE_ADDRESS;
+
         uint8_t wx = memory.readByte(WX_REGISTER);
         uint8_t wy = memory.readByte(WY_REGISTER);
 
-        if (x < wx - 7)
+        if (x < wx - 7 || currentScanline < wy)
             continue;
 
         int adjustedX = x - (wx - 7);
@@ -388,7 +389,7 @@ void PPU::renderWindow()
         uint8_t color = getPaletteColor(BGP, colorIndex);
 
         // check if we are in bounds
-        if (x < 0 || x >= SCREEN_WIDTH || currentScanline < 0 || currentScanline >= SCREEN_HEIGHT)
+        if (x >= SCREEN_WIDTH || currentScanline < 0 || currentScanline >= SCREEN_HEIGHT)
             continue;
 
         pixelBatch.push_back({x, currentScanline, color});
