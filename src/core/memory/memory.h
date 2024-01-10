@@ -19,14 +19,11 @@ public:
     void loadRom(char *data, size_t size);
 
 private:
-    uint8_t *romBank;           // Fixed ROM bank (16KB)
-    uint8_t *switchableRomBank; // Switchable ROM bank (16KB)
-    uint8_t *cartridgeRam;      // Cartridge RAM (8KB)
-    uint8_t *ioRegisters;       // I/O registers (128B)
-    uint8_t *highRam;           // High RAM (127B)
-    uint8_t *oam;               // OAM (160B)
-    uint8_t *wram;              // Working RAM (8KB)
-    uint8_t *vram;              // Video RAM (8KB)
+    uint8_t *ioRegisters; // I/O registers (128B)
+    uint8_t *highRam;     // High RAM (127B)
+    uint8_t *oam;         // OAM (160B)
+    uint8_t *wram;        // Working RAM (8KB)
+    uint8_t *vram;        // Video RAM (8KB)
 
     uint8_t IE; // Interrupt enable register
     uint8_t IF; // Interrupt flag register

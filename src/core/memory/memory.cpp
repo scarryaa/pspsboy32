@@ -2,33 +2,14 @@
 
 Memory::Memory(Cartridge &cartridge) : cartridge(&cartridge)
 {
-    romBank = new uint8_t[0x4000];
-    switchableRomBank = new uint8_t[0x4000];
     ioRegisters = new uint8_t[128];
     highRam = new uint8_t[127];
     oam = new uint8_t[160];
     wram = new uint8_t[0x2000];
     vram = new uint8_t[0x2000];
-    cartridgeRam = new uint8_t[0x2000];
 
     IE = 0;
     IF = 0;
-}
-
-// load rom from data
-void Memory::loadRom(char *data, size_t size)
-{
-    // Load ROM implementation
-    for (int i = 0; i < 0x4000; i++)
-    {
-        romBank[i] = data[i];
-    }
-
-    // Load switchable ROM bank
-    for (int i = 0, j = 0x4000; i < 0x4000; ++i, ++j)
-    {
-        switchableRomBank[i] = data[j];
-    }
 }
 
 Memory::~Memory()
@@ -38,7 +19,6 @@ Memory::~Memory()
     delete[] oam;
     delete[] vram;
     delete[] wram;
-    delete[] cartridgeRam;
 }
 
 uint8_t Memory::readByte(uint16_t address)
@@ -102,7 +82,7 @@ uint8_t Memory::readByte(uint16_t address)
     else if (address >= 0xA000 && address < 0xC000)
     {
         // Read from cartridge RAM
-        return cartridgeRam[address - 0xA000];
+        return cartridge->read(address);
     }
     else if (address >= 0xFEA0 && address < 0xFF00)
     {
@@ -213,12 +193,6 @@ void Memory::writeByte(uint16_t address, uint8_t value)
 
 void Memory::reset()
 {
-    // Reset ROM bank
-    for (int i = 0; i < sizeof(romBank); i++)
-    {
-        romBank[i] = 0;
-    }
-
     // Reset I/O registers
     for (int i = 0; i < sizeof(ioRegisters); i++)
     {

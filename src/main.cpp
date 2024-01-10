@@ -18,7 +18,6 @@ TFT_eSPI tft = TFT_eSPI();
 #include "./logger/logger.h"
 #include "./core/core.h"
 
-uint8_t previousFrameBuffer[160 * 144] = {0};
 Core core;
 std::unique_ptr<FileReader> fileReader;
 uint8_t lastFrameBuffer[160 * 144 * 2];
@@ -30,7 +29,6 @@ bool isLastFrameBufferInitialized = false;
 void setup()
 {
   delay(1000);
-  Logger logger;
   fileReader = std::unique_ptr<ESPFileReader>(new ESPFileReader());
   Serial.begin(115200);
   tft.init();
@@ -93,7 +91,7 @@ void updateLastFrameBuffer(const uint8_t *currentFrameBuffer)
   isLastFrameBufferInitialized = true;
 }
 
-void IRAM_ATTR renderGameBoyScreen()
+void renderGameBoyScreen()
 {
   if (core.isFrameReady())
   {
@@ -149,6 +147,7 @@ void loop()
 
 int frameCount = 0;
 auto lastTime = std::chrono::high_resolution_clock::now();
+uint8_t previousFrameBuffer[160 * 144] = {0};
 
 void updateFrameRate()
 {
@@ -158,7 +157,7 @@ void updateFrameRate()
 
   if (elapsed.count() >= 1.0)
   { // One second has passed
-    // std::cout << "Frame Rate: " << frameCount << " FPS" << std::endl;
+    std::cout << "Frame Rate: " << frameCount << " FPS" << std::endl;
     frameCount = 0;
     lastTime = currentTime;
   }
@@ -220,7 +219,7 @@ int main(int argc, char *argv[])
   std::cout << "Reading ROM file..." << std::endl;
 
   // Read ROM file into memory
-  if (fileReader->open("C:/Users/Ficis/OneDrive/Desktop/pspsboy32/roms/dmg-acid2/dmg-acid2.gb"))
+  if (fileReader->open("C:/Users/Ficis/OneDrive/Desktop/pspsboy32/roms/LoZ.gb"))
   {
     char *buffer = new char[0x8000];
 

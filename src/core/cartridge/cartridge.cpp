@@ -37,63 +37,73 @@ void Cartridge::setHeader(cartridgeHeader *header, uint8_t *rom)
     header->cgbFlag = rom[0x143];
     memcpy(header->newLicenseeCode, rom + 0x144, 2);
     header->sgbFlag = rom[0x146];
-    header->cartridgeType = rom[0x147];
-    header->romSize = rom[0x148];
-    header->ramSize = rom[0x149];
+    header->romSize = RomSize(rom[0x148]);
+    header->ramSize = RamSize(rom[0x149]);
     header->destinationCode = rom[0x14A];
     header->oldLicenseeCode = rom[0x14B];
     header->maskRomVersionNumber = rom[0x14C];
     header->headerChecksum = rom[0x14D];
     header->globalChecksum = rom[0x14E] << 8 | rom[0x14F];
+
+    uint8_t cartridgeType = rom[0x147];
+
+    switch (cartridgeType)
+    {
+    case 0x00:
+        header->cartridgeType = static_cast<uint8_t>(CartridgeType::ROM_ONLY);
+        break;
+    case 0x01:
+        header->cartridgeType = static_cast<uint8_t>(CartridgeType::MBC1);
+        break;
+    case 0x02:
+        header->cartridgeType = static_cast<uint8_t>(CartridgeType::MBC1);
+        break;
+    default:
+        header->cartridgeType = static_cast<uint8_t>(CartridgeType::UNKNOWN);
+        break;
+    }
 }
 
 // load rom from file
 void Cartridge::loadRom(char *buffer)
 {
-    // Load ROM implementation
-    for (int i = 0; i < 0x4000; i++)
-    {
-        rom[i] = buffer[i];
-    }
-
-    // Load switchable ROM bank
-    for (int i = 0, j = 0x4000; i < 0x4000; ++i, ++j)
-    {
-        rom[j] = buffer[j];
-    }
-
+    memcpy(rom, buffer, 0x8000);
     setHeader(&header, rom);
+
+    switch (header.cartridgeType)
+    {
+    case static_cast<uint8_t>(CartridgeType::ROM_ONLY):
+        mbcHandler = std::unique_ptr<IMBC>(new ROM_ONLY(rom, ram, header.romSize, header.ramSize));
+        break;
+    case static_cast<uint8_t>(CartridgeType::MBC1):
+        mbcHandler = std::unique_ptr<IMBC>(new MBC1(rom, ram, header.romSize, header.ramSize));
+        break;
+    default:
+        break;
+    }
 }
 
 uint8_t Cartridge::read(uint16_t address)
 {
-    if (address < 0x4000)
+    if (mbcHandler)
     {
-        return rom[address];
-    }
-    else if (address >= 0x4000 && address < 0x8000)
-    {
-        return rom[address];
-    }
-    else if (address >= 0xA000 && address < 0xC000)
-    {
-        return ram[address - 0xA000];
+        return mbcHandler->read(address);
     }
     else
     {
-        std::cerr << "Invalid cartridge read address: " << std::hex << address << std::endl;
+        // Fallback or error handling
         return 0;
     }
 }
 
 void Cartridge::write(uint16_t address, uint8_t value)
 {
-    if (address >= 0xA000 && address < 0xC000)
+    if (mbcHandler)
     {
-        ram[address - 0xA000] = value;
+        mbcHandler->write(address, value);
     }
     else
     {
-        std::cerr << "Invalid cartridge write address: " << std::hex << address << std::endl;
+        // Fallback or error handling
     }
 }
