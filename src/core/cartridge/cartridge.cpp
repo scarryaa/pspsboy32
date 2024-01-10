@@ -50,9 +50,18 @@ void Cartridge::setHeader(cartridgeHeader *header, uint8_t *rom)
 // load rom from file
 void Cartridge::loadRom(char *buffer)
 {
-    memcpy(rom, buffer, 0x8000);
+    // Load ROM implementation
+    for (int i = 0; i < 0x4000; i++)
+    {
+        rom[i] = buffer[i];
+    }
 
-    // Set cartridge header
+    // Load switchable ROM bank
+    for (int i = 0, j = 0x4000; i < 0x4000; ++i, ++j)
+    {
+        rom[j] = buffer[j];
+    }
+
     setHeader(&header, rom);
 }
 

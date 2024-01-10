@@ -63,12 +63,12 @@ uint8_t Memory::readByte(uint16_t address)
     if (address >= 0 && address < 0x4000)
     {
         // Read from fixed ROM bank
-        return romBank[address];
+        return cartridge->read(address);
     }
     else if (address >= 0x4000 && address < 0x8000)
     {
         // Read from switchable ROM bank
-        return switchableRomBank[address - 0x4000];
+        return cartridge->read(address);
     }
     else if (address >= 0xC000 && address < 0xE000)
     {

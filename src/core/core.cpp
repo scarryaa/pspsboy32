@@ -62,7 +62,7 @@ void Core::reset()
 void Core::loadRom(char *data, size_t size)
 {
     // Load ROM implementation
-    memory.loadRom(data, size);
+    cartridge.loadRom(data);
 }
 
 void Core::setButtonState(Button button, bool pressed)
