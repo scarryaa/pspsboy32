@@ -220,7 +220,7 @@ int main(int argc, char *argv[])
   std::cout << "Reading ROM file..." << std::endl;
 
   // Read ROM file into memory
-  if (fileReader->open("roms/halt_bug.gb"))
+  if (fileReader->open("C:/Users/Ficis/OneDrive/Desktop/pspsboy32/roms/dmg-acid2/dmg-acid2.gb"))
   {
     char *buffer = new char[0x8000];
 

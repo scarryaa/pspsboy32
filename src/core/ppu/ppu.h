@@ -59,6 +59,7 @@ extern bool debugDrawn;
 
 struct Sprite
 {
+    int index;
     uint8_t y;
     uint8_t x;
     uint8_t tileNumber;
@@ -129,7 +130,9 @@ private:
     Memory &memory;
 
     uint8_t tileData[16]; // Buffer to hold tile data for one tile
-    uint8_t colorLookupTable[4] = {0xFF, 0x77, 0x6D, 0x00};
+    uint8_t colorLookupTable[4] = {0xFF, 0xAA, 0x55, 0x00};
+    // window internal line counter
+    uint8_t win_line_counter;
 };
 
 #endif // PPU_H

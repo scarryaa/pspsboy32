@@ -26,7 +26,7 @@ void PPU::reset()
 
 void PPU::update(int cycles)
 {
-    bool lcdEnabled = memory.readByte(LCDC) & 0x80 != 0;
+    // bool lcdEnabled = memory.readByte(LCDC) & 0x80 != 0;
 
     // if (!lcdEnabled)
     // {
@@ -65,6 +65,13 @@ void PPU::update(int cycles)
         {
             cycleCounter -= H_BLANK_CYCLES;
             currentScanline++;
+
+            // increment the window line counter if the window is enabled
+            if (memory.readByte(LCDC) & 0x20)
+            {
+                memory.writeByte(WY_REGISTER, memory.readByte(WY_REGISTER) + 1);
+            }
+
             memory.writeByte(LY_ADDRESS, currentScanline); // Update LY
 
             if (currentScanline == SCREEN_HEIGHT)
@@ -82,6 +89,9 @@ void PPU::update(int cycles)
     case PPUMode::VBlank:
         memory.writeByte(0xFF0F, memory.readByte(0xFF0F) | 0x01);          // Set VBlank interrupt flag
         memory.writeByte(0xFF41, (memory.readByte(0xFF41) & 0xFC) | 0x01); // Set mode flag to VBlank
+        // reset the window line counter
+        memory.writeByte(WY_REGISTER, 0);
+
         if (cycleCounter >= V_BLANK_CYCLES)
         {
             cycleCounter -= V_BLANK_CYCLES;
@@ -160,28 +170,33 @@ void PPU::renderScanline()
 
 bool PPU::isSpriteVisible(Sprite sprite)
 {
-    int sx = sprite.x - 8;
-    int sy = sprite.y - 16;
+    uint8_t _LCDC = memory.readByte(LCDC);
 
-    int spriteWidth = 8;
-    int spriteHeight = 8; // or 16, if using 8x16 mode
+    // Check if sprites are enabled
+    if (!(_LCDC & 0x02))
+        return false;
 
-    bool isWithinXBounds = (sx + spriteWidth > 0) && (sx < SCREEN_WIDTH);
-    bool isWithinYBounds = (sy + spriteHeight > 0) && (sy < SCREEN_HEIGHT);
+    // Check if the sprite is on the current scanline
+    if (sprite.y > currentScanline || sprite.y + 8 <= currentScanline)
+        return false;
 
-    return isWithinXBounds && isWithinYBounds;
+    return true;
 }
 
 uint8_t PPU::getSpritePixelColor(Sprite sprite, int x, int y)
 {
     uint8_t _LCDC = memory.readByte(LCDC);
 
+    // Check if sprites are enabled
+    if (!(_LCDC & 0x02))
+        return 0xFF;
+
     if (sprite.attributes & 0x20)
         x = 7 - x;
     if (sprite.attributes & 0x40)
         y = 7 - y;
 
-    bool is8x16 = (_LCDC & 0x02) >> 1;
+    bool is8x16 = (_LCDC & 0x04) >> 1;
     uint8_t tileIndex = sprite.tileNumber;
     if (is8x16)
     {
@@ -237,9 +252,18 @@ void PPU::renderSprites()
         spriteHeight = 16;
     }
 
+    uint8_t spriteXBuffer[SCREEN_WIDTH * SCREEN_HEIGHT];
+    std::fill_n(spriteXBuffer, SCREEN_WIDTH * SCREEN_HEIGHT, 0xFF);
+
     // Draw a sprite
+    int spritesDrawnOnLine = 0;
     for (int i = 0; i < 40; i++)
     {
+        if (spritesDrawnOnLine >= 10)
+        {
+            break; // Stop processing after 10 sprites have been drawn on the current scanline
+        }
+
         Sprite sprite;
         sprite.y = memory.readByte(OAM_START + i * 4) - 16;
         sprite.x = memory.readByte(OAM_START + i * 4 + 1) - 8;
@@ -249,6 +273,8 @@ void PPU::renderSprites()
         if (!isSpriteVisible(sprite))
             continue;
 
+        spritesDrawnOnLine++;
+
         std::vector<Pixel> spriteBatch;
 
         // Draw a scanline of the sprite
@@ -256,16 +282,40 @@ void PPU::renderSprites()
         {
             for (int x = 0; x < 8; x++)
             {
+
+                // Check for BG/Window Priority
+                bool bgWinPriority = sprite.attributes & 0x80;
+                if (bgWinPriority)
+                    continue;
+
                 int screenX = sprite.x + x;
                 int screenY = sprite.y + y;
 
-                if (screenX < 0 || screenX >= SCREEN_WIDTH || screenY < 0 || screenY >= SCREEN_HEIGHT)
-                    continue;
+                // Check for sprite y-flip
+                if (sprite.attributes & 0x40)
+                {
+                    screenY = sprite.y + spriteHeight - y - 1;
+                }
 
-                uint8_t colorIndex = getSpritePixelColor(sprite, x, y);
-                uint8_t color = getPaletteColor((sprite.attributes & 0x10) ? OBP1 : OBP0, colorIndex);
+                // Check for sprite x-flip
+                if (sprite.attributes & 0x20)
+                {
+                    screenX = sprite.x + 7 - x;
+                }
 
-                spriteBatch.push_back({sprite.x + x, sprite.y + y, color, colorIndex, sprite.attributes});
+                // Check for sprite-to-sprite priority
+                if (sprite.x < spriteXBuffer[screenY * SCREEN_WIDTH + screenX])
+                {
+                    if (screenX < 0 || screenX >= SCREEN_WIDTH || screenY < 0 || screenY >= SCREEN_HEIGHT)
+                        continue;
+
+                    uint8_t colorIndex = getSpritePixelColor(sprite, x, y);
+                    uint8_t color = getPaletteColor((sprite.attributes & 0x10) ? OBP1 : OBP0, colorIndex);
+
+                    spriteBatch.push_back({sprite.x + x, sprite.y + y, color, colorIndex, sprite.attributes});
+
+                    spriteXBuffer[screenY * SCREEN_WIDTH + screenX] = sprite.x;
+                }
 
                 // Flush the batch if it's full
                 if (spriteBatch.size() == BATCH_SIZE)
@@ -293,23 +343,29 @@ void PPU::renderDebug()
 void PPU::renderWindow()
 {
     // Check LCDC.5 to see if window is enabled
-    if (!(memory.readByte(LCDC) & 0x20))
+    if (!(memory.readByte(LCDC) & 0x20) || !(memory.readByte(LCDC) & 0x01))
+        return;
+
+    // Check if the window is visible on the current scanline
+    if (currentScanline < memory.readByte(WY_REGISTER))
         return;
 
     bool addrMode = memory.readByte(0xFF40) & 0x10;
     uint16_t baseAddr = addrMode ? TILE_DATA_0_BASE_ADDRESS : TILE_DATA_1_BASE_ADDRESS;
 
     bool useTileMap1 = memory.readByte(LCDC) & 0x40;
-    uint16_t baseMapAddress = useTileMap1 ? TILE_MAP_0_BASE_ADDRESS : TILE_MAP_1_BASE_ADDRESS;
+    uint16_t baseMapAddress = useTileMap1 ? TILE_MAP_1_BASE_ADDRESS : TILE_MAP_0_BASE_ADDRESS;
 
-    uint8_t wx = memory.readByte(WX_REGISTER);
-    uint8_t wy = memory.readByte(WY_REGISTER);
-
-    int y = currentScanline; // Use the current scanline
     for (int x = 0; x < SCREEN_WIDTH; x++)
     {
-        int adjustedX = (x + wx) % 256;
-        int adjustedY = (y + wy) % 256;
+        uint8_t wx = memory.readByte(WX_REGISTER);
+        uint8_t wy = memory.readByte(WY_REGISTER);
+
+        if (x < wx - 7)
+            continue;
+
+        int adjustedX = x - (wx - 7);
+        int adjustedY = currentScanline - wy;
 
         uint8_t tileX = adjustedX / 8;
         uint8_t tileY = adjustedY / 8;
@@ -332,10 +388,10 @@ void PPU::renderWindow()
         uint8_t color = getPaletteColor(BGP, colorIndex);
 
         // check if we are in bounds
-        if (x < 0 || x >= SCREEN_WIDTH || y < 0 || y >= SCREEN_HEIGHT)
+        if (x < 0 || x >= SCREEN_WIDTH || currentScanline < 0 || currentScanline >= SCREEN_HEIGHT)
             continue;
 
-        pixelBatch.push_back({x, y, color});
+        pixelBatch.push_back({x, currentScanline, color});
 
         // Flush the batch if it's full
         if (pixelBatch.size() == BATCH_SIZE)
@@ -343,6 +399,8 @@ void PPU::renderWindow()
             flushBatch();
         }
     }
+
+    flushBatch();
 }
 
 uint8_t PPU::getTilePixelColor(uint16_t address, uint8_t x, uint8_t y)
@@ -368,7 +426,7 @@ void PPU::renderBackground()
     bool addrMode = memory.readByte(0xFF40) & 0x10;
     uint16_t baseAddr = addrMode ? TILE_DATA_0_BASE_ADDRESS : TILE_DATA_1_BASE_ADDRESS;
 
-    bool useTileMap1 = memory.readByte(LCDC) & 0x08 != 0;
+    bool useTileMap1 = !(memory.readByte(LCDC) & 0x08);
     uint16_t baseMapAddress = useTileMap1 ? TILE_MAP_0_BASE_ADDRESS : TILE_MAP_1_BASE_ADDRESS;
 
     int y = currentScanline; // Use the current scanline
