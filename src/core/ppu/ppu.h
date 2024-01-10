@@ -13,6 +13,10 @@
 #define V_BLANK_CYCLES 456
 #define V_BLANK_SCANLINE_MAX 153
 
+#define DEBUG_WIDTH 640
+#define DEBUG_HEIGHT 480
+#define DEBUG_SIZE (DEBUG_WIDTH * DEBUG_HEIGHT)
+
 #define SCREEN_WIDTH 160
 #define SCREEN_HEIGHT 144
 #define SCREEN_SIZE (SCREEN_WIDTH * SCREEN_HEIGHT)
@@ -30,6 +34,8 @@
 #define OAM_BASE_ADDRESS 0xFE00
 #define OAM_SIZE 160
 
+#define STAT 0xFF41
+#define LYC_ADDRESS 0xFF45
 #define LY_ADDRESS 0xFF44
 #define LCDC 0xFF40
 
@@ -49,6 +55,7 @@ struct Pixel
 };
 
 extern std::vector<Pixel> pixelBatch;
+extern bool debugDrawn;
 
 struct Sprite
 {
@@ -93,7 +100,7 @@ public:
 
 private:
     uint8_t frameBuffer[SCREEN_SIZE]; // Frame buffer for pixel data
-    uint8_t debugFrameBuffer[SCREEN_SIZE];
+    uint8_t debugFrameBuffer[DEBUG_SIZE];
     int cycleCounter;                 // Counts the cycles to determine the PPU's current state
     PPUMode currentMode;              // Current mode of the PPU
     int currentScanline;              // Current scanline being processed

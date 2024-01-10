@@ -220,7 +220,7 @@ int main(int argc, char *argv[])
   std::cout << "Reading ROM file..." << std::endl;
 
   // Read ROM file into memory
-  if (fileReader->open("C:/Users/Ficis/OneDrive/Desktop/pspsboy32/roms/Dr. Mario (World).gb"))
+  if (fileReader->open("roms/halt_bug.gb"))
   {
     char *buffer = new char[0x8000];
 
@@ -251,7 +251,7 @@ int main(int argc, char *argv[])
       renderer,
       SDL_PIXELFORMAT_RGB332,
       SDL_TEXTUREACCESS_STREAMING,
-      320, // Frame buffer width
+      640, // Frame buffer width
       480  // Frame buffer height
   );
 
@@ -298,7 +298,8 @@ int main(int argc, char *argv[])
       SDL_RenderPresent(renderer);
 
       // Render debug window
-      SDL_UpdateTexture(debugTexture, nullptr, core.getDebugFrameBuffer(), 160 * sizeof(uint8_t));
+      SDL_UpdateTexture(debugTexture, nullptr, core.getDebugFrameBuffer(), 640 * sizeof(uint8_t));
+      SDL_RenderClear(debugRenderer);
       SDL_RenderCopy(debugRenderer, debugTexture, nullptr, nullptr);
       SDL_RenderPresent(debugRenderer);
 

@@ -1,11 +1,14 @@
 #include "ppu.h"
 
 std::vector<Pixel> pixelBatch;
+bool debugDrawn = false;
 
 PPU::PPU(Memory &memory) : memory(memory)
 {
     reset();
     pixelBatch = std::vector<Pixel>();
+
+    memset(debugFrameBuffer, 0xFF, DEBUG_SIZE);
 }
 
 PPU::~PPU()
@@ -139,14 +142,20 @@ void PPU::renderScanline()
     // Render background
     renderBackground();
 
-    // Render sprites
-    renderSprites();
-
     // Render window
     renderWindow();
 
-    // Render debug
-    renderDebug();
+    // Render sprites
+    renderSprites();
+
+    // Render debug once
+    if (debugDrawn)
+        return;
+    else
+    {
+        debugDrawn = true;
+        renderDebug();
+    }
 }
 
 bool PPU::isSpriteVisible(Sprite sprite)
@@ -272,11 +281,68 @@ void PPU::renderSprites()
 
 void PPU::renderDebug()
 {
-    drawPixel(debugFrameBuffer, 0, 0, 3);
+    for (int x = 0; x < DEBUG_WIDTH; x++)
+    {
+        for (int y = 0; y < DEBUG_HEIGHT; y++)
+        {
+            drawPixel(debugFrameBuffer, x, y, 0xFF);
+        }
+    }
 }
 
 void PPU::renderWindow()
 {
+    // Check LCDC.5 to see if window is enabled
+    if (!(memory.readByte(LCDC) & 0x20))
+        return;
+
+    bool addrMode = memory.readByte(0xFF40) & 0x10;
+    uint16_t baseAddr = addrMode ? TILE_DATA_0_BASE_ADDRESS : TILE_DATA_1_BASE_ADDRESS;
+
+    bool useTileMap1 = memory.readByte(LCDC) & 0x40;
+    uint16_t baseMapAddress = useTileMap1 ? TILE_MAP_0_BASE_ADDRESS : TILE_MAP_1_BASE_ADDRESS;
+
+    uint8_t wx = memory.readByte(WX_REGISTER);
+    uint8_t wy = memory.readByte(WY_REGISTER);
+
+    int y = currentScanline; // Use the current scanline
+    for (int x = 0; x < SCREEN_WIDTH; x++)
+    {
+        int adjustedX = (x + wx) % 256;
+        int adjustedY = (y + wy) % 256;
+
+        uint8_t tileX = adjustedX / 8;
+        uint8_t tileY = adjustedY / 8;
+
+        uint16_t tileMapAddress = baseMapAddress + tileY * 32 + tileX;
+        uint8_t tileIndex = memory.readByte(tileMapAddress);
+
+        uint16_t tileAddress;
+        if (addrMode)
+        {
+            tileAddress = baseAddr + tileIndex * 16;
+        }
+        else
+        {
+            int8_t signedTileIndex = static_cast<int8_t>(tileIndex);
+            tileAddress = 0x9000 + signedTileIndex * 16;
+        }
+
+        uint8_t colorIndex = getTilePixelColor(tileAddress, adjustedX % 8, adjustedY % 8);
+        uint8_t color = getPaletteColor(BGP, colorIndex);
+
+        // check if we are in bounds
+        if (x < 0 || x >= SCREEN_WIDTH || y < 0 || y >= SCREEN_HEIGHT)
+            continue;
+
+        pixelBatch.push_back({x, y, color});
+
+        // Flush the batch if it's full
+        if (pixelBatch.size() == BATCH_SIZE)
+        {
+            flushBatch();
+        }
+    }
 }
 
 uint8_t PPU::getTilePixelColor(uint16_t address, uint8_t x, uint8_t y)
@@ -379,21 +445,21 @@ void PPU::resetFrameReady()
 
 void PPU::updateSTATInterrupt()
 {
-    uint8_t STAT = memory.readByte(0xFF41);
+    uint8_t _STAT = memory.readByte(STAT);
     uint8_t LY = memory.readByte(0xFF44);
     uint8_t LYC = memory.readByte(0xFF45);
     bool interruptRequested = false;
 
     // Check LYC=LY coincidence
-    if ((LY == LYC) && (STAT & 0x40))
+    if ((LY == LYC) && (_STAT & 0x40))
     {
         interruptRequested = true;
     }
 
     // Check for mode-specific STAT interrupts
-    if (((currentMode == PPUMode::OAMSearch) && (STAT & 0x20)) ||
-        ((currentMode == PPUMode::VBlank) && (STAT & 0x10)) ||
-        ((currentMode == PPUMode::HBlank) && (STAT & 0x08)))
+    if (((currentMode == PPUMode::OAMSearch) && (_STAT & 0x20)) ||
+        ((currentMode == PPUMode::VBlank) && (_STAT & 0x10)) ||
+        ((currentMode == PPUMode::HBlank) && (_STAT & 0x08)))
     {
         interruptRequested = true;
     }

@@ -567,7 +567,8 @@ void CPU::reset()
 uint8_t CPU::fetchInstruction()
 {
     // Fetch the next instruction from memory
-    uint8_t opcode = memory.readByte(PC++);
+    uint8_t opcode = memory.readByte(halt_bug ? PC : PC++);
+    halt_bug = false;
     return opcode;
 }
 
@@ -644,6 +645,7 @@ void CPU::handleInterrupts()
                 PC = 0x0040; // V-Blank
                 break;
             case 1:
+                printf("LCD STAT\n");
                 PC = 0x0048; // LCD STAT
                 break;
             case 2:

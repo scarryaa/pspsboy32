@@ -718,6 +718,7 @@ private:
     uint8_t B, C, D, E, H, L;
     uint16_t SP;
     uint16_t PC;
+    bool halt_bug = false;
 
     // Memory management component
     Memory &memory;

@@ -1073,16 +1073,20 @@ uint8_t CPU::LD_mem_HL_L()
 // 0x76
 uint8_t CPU::HALT()
 {
-    // Check for halt bug condition (IME disabled and any interrupt requested)
-    if (!IME && (memory.readByte(0xFF0F) & memory.readByte(0xFFFF) & 0x1F))
+    if (IME)
     {
-        // Halt bug: Do not actually halt and do not increment PC
-        printf("Halt bug triggered\n");
+        halted = true;
     }
     else
     {
-        // Normal halt behavior
-        halted = true;
+        if (memory.readByte(0xFFFF) & memory.readByte(0xFF0F) & 0x1F)
+        {
+            halt_bug = true;
+        }
+        else
+        {
+            halted = true;
+        }
     }
     return 4;
 }

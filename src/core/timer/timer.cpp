@@ -14,7 +14,7 @@ void Timer::updateTimers(uint16_t cycles)
     divCounter += cycles;
     if (divCounter >= 256)
     {
-        memory.writeByte(0xFF04, 1);
+        memory.writeByte(0xFF04, rand());
         divCounter -= 256;
     }
 

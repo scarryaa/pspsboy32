@@ -53,7 +53,7 @@ uint8_t Memory::readByte(uint16_t address)
     if (address == 0xFF0F)
     {
         // Interrupt flag register
-        return IF;
+        return IF | 0xE0;
     }
     if (address == 0xFFFF)
     {
