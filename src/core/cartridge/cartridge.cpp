@@ -2,20 +2,10 @@
 
 Cartridge::Cartridge()
 {
-    rom = new uint8_t[0x8000];
-    ram = new uint8_t[0x2000];
 }
 
 Cartridge::~Cartridge()
 {
-    if (rom)
-    {
-        delete[] rom;
-    }
-    if (ram)
-    {
-        delete[] ram;
-    }
 }
 
 cartridgeHeader Cartridge::getHeader()
@@ -23,7 +13,7 @@ cartridgeHeader Cartridge::getHeader()
     return header;
 }
 
-uint8_t *Cartridge::getRom()
+std::vector<uint8_t> Cartridge::getRom()
 {
     return rom;
 }
@@ -58,6 +48,9 @@ void Cartridge::setHeader(cartridgeHeader *header, uint8_t *rom)
     case 0x02:
         header->cartridgeType = static_cast<uint8_t>(CartridgeType::MBC1);
         break;
+    case 0x03:
+        header->cartridgeType = static_cast<uint8_t>(CartridgeType::MBC1);
+        break;
     default:
         header->cartridgeType = static_cast<uint8_t>(CartridgeType::UNKNOWN);
         break;
@@ -65,10 +58,29 @@ void Cartridge::setHeader(cartridgeHeader *header, uint8_t *rom)
 }
 
 // load rom from file
-void Cartridge::loadRom(char *buffer)
+void Cartridge::loadRom(const std::string &path)
 {
-    memcpy(rom, buffer, 0x8000);
-    setHeader(&header, rom);
+    FILE *file = std::fopen(path.c_str(), "rb");
+    if (!file)
+    {
+        std::cerr << "Error opening file" << std::endl;
+        return;
+    }
+
+    std::fseek(file, 0, SEEK_END);
+    size_t size = std::ftell(file);
+    std::rewind(file);
+
+    // Resize the vector to fit the ROM
+    rom.resize(size);
+
+    // Read the file into the vector
+    std::fread(rom.data(), sizeof(uint8_t), size, file);
+
+    // Close the file
+    std::fclose(file);
+
+    setHeader(&header, rom.data());
 
     switch (header.cartridgeType)
     {

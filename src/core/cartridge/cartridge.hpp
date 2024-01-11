@@ -7,6 +7,8 @@
 #include <string>
 #include <memory>
 #include <wchar.h>
+#include <vector>
+#include <fstream>
 #include "core/mbc/ROM_ONLY.hpp"
 #include "core/mbc/IMBC.hpp"
 #include "core/mbc/MBC1.hpp"
@@ -72,7 +74,7 @@ class Cartridge
 {
 private:
     cartridgeHeader header;
-    uint8_t *rom;
+    std::vector<uint8_t> rom;
     uint8_t *ram;
 
 public:
@@ -80,11 +82,11 @@ public:
     ~Cartridge();
 
     std::unique_ptr<IMBC> mbcHandler;
-    void loadRom(char *buffer);
+    void loadRom(const std::string &path);
     uint8_t read(uint16_t address);
     void write(uint16_t address, uint8_t value);
     cartridgeHeader getHeader();
-    uint8_t *getRom();
+    std::vector<uint8_t> getRom();
     void setHeader(cartridgeHeader *header, uint8_t *rom);
 };
 

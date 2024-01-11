@@ -35,7 +35,7 @@ public:
     void resetFrameReady();
 
     void reset();
-    void loadRom(char *data, size_t size);
+    void loadRom(const std::string &path);
 
     uint8_t getButtonState();
     void setButtonState(Button button, bool pressed);

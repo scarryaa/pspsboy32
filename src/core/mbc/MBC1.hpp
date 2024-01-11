@@ -8,17 +8,17 @@
 class MBC1 : public IMBC
 {
 private:
-    uint8_t *rom;
+    std::vector<uint8_t> rom;
     uint8_t *ram;
-    uint8_t romBank;
-    uint8_t ramBank;
-    bool ramEnabled;
-    int romBankingMode;
+    uint8_t mbc1Reg;
+    uint8_t mbc2Reg;
+    uint8_t mbcMode;
+    uint8_t mbcRamEnable;
     RomSize romSize;
     RamSize ramSize;
 
 public:
-    MBC1(uint8_t *rom, uint8_t *ram, RomSize romSize, RamSize ramSize);
+    MBC1(std::vector<uint8_t> rom, uint8_t *ram, RomSize romSize, RamSize ramSize);
     ~MBC1();
 
     uint8_t read(uint16_t address);

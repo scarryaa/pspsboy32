@@ -189,6 +189,11 @@ void Memory::writeByte(uint16_t address, uint8_t value)
     {
         // Unusable memory
     }
+    else if (address >= 0xA000 && address < 0xC000)
+    {
+        // Write to cartridge RAM
+        cartridge->write(address, value);
+    }
 }
 
 void Memory::reset()

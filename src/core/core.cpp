@@ -59,10 +59,10 @@ void Core::reset()
 }
 
 // loadRom from data
-void Core::loadRom(char *data, size_t size)
+void Core::loadRom(const std::string &path)
 {
     // Load ROM implementation
-    cartridge.loadRom(data);
+    cartridge.loadRom(path);
 }
 
 void Core::setButtonState(Button button, bool pressed)

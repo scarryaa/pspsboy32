@@ -1,9 +1,9 @@
 #include "ROM_ONLY.hpp"
 
-ROM_ONLY::ROM_ONLY(uint8_t *rom, uint8_t *ram, RomSize romSize, RamSize ramSize)
+ROM_ONLY::ROM_ONLY(std::vector<uint8_t> rom, uint8_t *ram, RomSize romSize, RamSize ramSize)
 {
     this->rom = rom;
-    this->ram = ram;
+    this->ram = new uint8_t[0x2000 * static_cast<uint8_t>(ramSize)];
     this->romSize = romSize;
     this->ramSize = ramSize;
 }

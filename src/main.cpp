@@ -49,23 +49,7 @@ void setup()
   Serial.println(SD.exists("roms/LoZ.gb") ? "ROM file exists" : "ROM file does not exist");
 
   core.init();
-
-  // Read ROM file into memory
-  if (fileReader->open("/roms/Dr. Mario (World).gb"))
-  {
-    char *buffer = new char[0x8000];
-
-    size_t bytesRead = fileReader->read(buffer, 0x8000);
-    Serial.println("bytesRead: " + String(bytesRead));
-    core.loadRom(buffer, bytesRead);
-
-    fileReader->close();
-    delete[] buffer;
-  }
-  else
-  {
-    Serial.println("Failed to open ROM file");
-  }
+  core.loadRom("/roms/Dr Mario (World).gb");
 }
 
 bool isFrameBufferChanged(const uint8_t *currentFrameBuffer)
@@ -218,22 +202,7 @@ int main(int argc, char *argv[])
 
   std::cout << "Reading ROM file..." << std::endl;
 
-  // Read ROM file into memory
-  if (fileReader->open("C:/Users/Ficis/OneDrive/Desktop/pspsboy32/roms/LoZ.gb"))
-  {
-    char *buffer = new char[0x8000];
-
-    size_t bytesRead = fileReader->read(buffer, 0x8000);
-    std::cout << "bytesRead: " << bytesRead << std::endl;
-    core.loadRom(buffer, bytesRead);
-
-    fileReader->close();
-    delete[] buffer;
-  }
-  else
-  {
-    std::cout << "Failed to open ROM file" << std::endl;
-  }
+  core.loadRom("roms/Kirby's Dream Land.gb");
 
   // Main loop
   bool running = true;
