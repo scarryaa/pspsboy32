@@ -57,6 +57,18 @@ void Cartridge::setHeader(cartridgeHeader *header, uint8_t *rom)
     }
 }
 
+void Cartridge::reset()
+{
+    mbcHandler.reset();
+    rom.clear();
+    header = {};
+}
+
+bool Cartridge::isGameLoaded()
+{
+    return rom.size() > 0;
+}
+
 // load rom from file
 void Cartridge::loadRom(const std::string &path)
 {

@@ -19,6 +19,16 @@ MBC1::~MBC1()
     delete[] ram;
 }
 
+void MBC1::reset()
+{
+    this->mbc1Reg = 0x01;       // MBC bank register 1, 5 bits
+    this->mbc2Reg = 0;          // MBC bank register 2, 2 bits
+    this->mbcMode = 0;          // ROM Banking Mode,    1 bit
+    this->mbcRamEnable = false; // Disable RAM by default
+    this->rom.clear();
+    this->ram = new uint8_t[0x2000 * static_cast<uint8_t>(ramSize)];
+}
+
 uint8_t MBC1::read(uint16_t address)
 {
     if (address >= 0x0000 && address <= 0x3FFF)

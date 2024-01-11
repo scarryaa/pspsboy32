@@ -15,6 +15,7 @@ public:
     ROM_ONLY(const std::vector<uint8_t> rom, uint8_t *ram, RomSize romSize, RamSize ramSize);
     ~ROM_ONLY();
 
+    void reset();
     uint8_t read(uint16_t address);
     void write(uint16_t address, uint8_t value);
 };

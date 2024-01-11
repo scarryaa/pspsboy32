@@ -28,6 +28,12 @@ uint8_t ROM_ONLY::read(uint16_t address)
     }
 }
 
+void ROM_ONLY::reset()
+{
+    this->rom.clear();
+    this->ram = new uint8_t[0x2000 * static_cast<uint8_t>(ramSize)];
+}
+
 void ROM_ONLY::write(uint16_t address, uint8_t value)
 {
     if (address >= 0xA000 && address < 0xC000)

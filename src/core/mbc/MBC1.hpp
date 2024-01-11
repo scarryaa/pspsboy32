@@ -23,6 +23,7 @@ public:
     ~MBC1();
 
     uint8_t read(uint16_t address);
+    void reset();
     void write(uint16_t address, uint8_t value);
 };
 

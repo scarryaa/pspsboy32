@@ -81,6 +81,8 @@ public:
     Cartridge();
     ~Cartridge();
 
+    void reset();
+    bool isGameLoaded();
     std::unique_ptr<IMBC> mbcHandler;
     void loadRom(const std::string &path);
     uint8_t read(uint16_t address);

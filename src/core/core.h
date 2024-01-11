@@ -33,16 +33,18 @@ public:
     void setCpuTime(int time);
     double elapsedTime();
     void init();
-    uint8_t update();
+    uint8_t run();
     void shutdown();
     uint8_t *getFrameBuffer();
     uint8_t *getDebugFrameBuffer();
 
     bool isFrameReady();
     void resetFrameReady();
+    bool isGameLoaded();
+    bool isRunning();
 
     void reset();
-    void loadRom(const std::string &path);
+    bool loadRom(const std::string &path);
 
     uint8_t getButtonState();
     void setButtonState(Button button, bool pressed);

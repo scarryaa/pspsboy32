@@ -9,6 +9,11 @@ Core::~Core()
     // Destructor implementation
 }
 
+bool Core::isRunning()
+{
+    return true;
+}
+
 void Core::init()
 {
     reset();
@@ -24,7 +29,7 @@ void Core::setCpuTime(int cpuTime)
     cpu.setCpuTime(cpuTime);
 }
 
-uint8_t Core::update()
+uint8_t Core::run()
 {
     int cyclesThisUpdate = 0;
     // CPU executes one instruction, which could take multiple cycles
@@ -66,13 +71,20 @@ void Core::reset()
     memory.reset();
     cpu.reset();
     ppu.reset();
+    cartridge.reset();
+}
+
+bool Core::isGameLoaded()
+{
+    return cartridge.isGameLoaded();
 }
 
 // loadRom from data
-void Core::loadRom(const std::string &path)
+bool Core::loadRom(const std::string &path)
 {
     // Load ROM implementation
     cartridge.loadRom(path);
+    return true;
 }
 
 void Core::setButtonState(Button button, bool pressed)

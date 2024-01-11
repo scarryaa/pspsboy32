@@ -210,4 +210,28 @@ void Memory::reset()
     {
         ioRegisters[i] = 0;
     }
+
+    // Reset high RAM
+    for (int i = 0; i < sizeof(highRam); i++)
+    {
+        highRam[i] = 0;
+    }
+
+    // Reset OAM
+    for (int i = 0; i < sizeof(oam); i++)
+    {
+        oam[i] = 0;
+    }
+
+    // Reset VRAM
+    for (int i = 0; i < sizeof(vram); i++)
+    {
+        vram[i] = 0;
+    }
+
+    // Reset WRAM
+    for (int i = 0; i < sizeof(wram); i++)
+    {
+        wram[i] = 0;
+    }
 }
