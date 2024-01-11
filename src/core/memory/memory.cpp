@@ -104,6 +104,18 @@ void Memory::writeByte(uint16_t address, uint8_t value)
 {
     Logger logger;
 
+    if (address >= 0xA000 && address < 0xC000)
+    {
+        // Write to cartridge RAM
+        cartridge->write(address, value);
+    }
+
+    if (address >= 0 && address < 0x4000)
+    {
+        // Write to fixed ROM bank
+        cartridge->write(address, value);
+    }
+
     // DMA transfer
     if (address == 0xFF46)
     {
@@ -188,11 +200,6 @@ void Memory::writeByte(uint16_t address, uint8_t value)
     else if (address >= 0xFEA0 && address < 0xFF00)
     {
         // Unusable memory
-    }
-    else if (address >= 0xA000 && address < 0xC000)
-    {
-        // Write to cartridge RAM
-        cartridge->write(address, value);
     }
 }
 

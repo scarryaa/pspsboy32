@@ -4,6 +4,7 @@
 #include <cstdint>
 #include "core/mbc/IMBC.hpp"
 #include "core/mbc/size.hpp"
+#include <stdbool.h>
 
 class MBC1 : public IMBC
 {
@@ -13,7 +14,7 @@ private:
     uint8_t mbc1Reg;
     uint8_t mbc2Reg;
     uint8_t mbcMode;
-    uint8_t mbcRamEnable;
+    bool mbcRamEnable;
     RomSize romSize;
     RamSize ramSize;
 

@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
 
   std::cout << "Reading ROM file..." << std::endl;
 
-  core.loadRom("roms/Kirby's Dream Land.gb");
+  core.loadRom("roms/LoZ.gb");
 
   // Main loop
   bool running = true;
