@@ -19,17 +19,14 @@ TFT_eSPI tft = TFT_eSPI();
 #include "./core/core.h"
 
 Core core;
-std::unique_ptr<FileReader> fileReader;
 uint8_t lastFrameBuffer[160 * 144 * 2];
 bool isLastFrameBufferInitialized = false;
 
 #ifdef PLATFORM_ESP32
-#include "file-reader/esp-file-reader.h"
 
 void setup()
 {
   delay(1000);
-  fileReader = std::unique_ptr<ESPFileReader>(new ESPFileReader());
   Serial.begin(115200);
   tft.init();
 
@@ -124,31 +121,29 @@ void loop()
 #endif
 
 #ifdef PLATFORM_NATIVE
-#include "file-reader/desktop-file-reader.h"
 #include <SDL.h>
 #include <iostream>
 #include <chrono>
+#include "imgui/imgui.h"
+#include "imgui/imconfig.h"
+#include "imgui/imgui_internal.h"
+#include "imgui/imgui_impl_sdl2.h"
+#include "imgui/imgui_impl_sdlrenderer2.h"
 
-int frameCount = 0;
-auto lastTime = std::chrono::high_resolution_clock::now();
+auto prev_time = std::chrono::high_resolution_clock::now();
 uint8_t previousFrameBuffer[160 * 144] = {0};
-
-void updateFrameRate()
-{
-  frameCount++;
-  auto currentTime = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> elapsed = currentTime - lastTime;
-
-  if (elapsed.count() >= 1.0)
-  { // One second has passed
-    std::cout << "Frame Rate: " << frameCount << " FPS" << std::endl;
-    frameCount = 0;
-    lastTime = currentTime;
-  }
-}
 
 int main(int argc, char *argv[])
 {
+  // Setup Dear ImGui context
+  IMGUI_CHECKVERSION();
+  ImGui::CreateContext();
+  ImGuiIO &io = ImGui::GetIO();
+  (void)io;
+
+  // Setup Dear ImGui style
+  ImGui::StyleColorsDark();
+
   // Initialize SDL
   if (SDL_Init(SDL_INIT_VIDEO) < 0)
   {
@@ -157,13 +152,13 @@ int main(int argc, char *argv[])
   }
 
   // Create Debug window
-  SDL_Window *debugWindow = SDL_CreateWindow("Debug",
-                                             SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                             640, 480, SDL_WINDOW_SHOWN);
+  // SDL_Window *debugWindow = SDL_CreateWindow("Debug",
+  //                                            SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+  //                                            640, 480, SDL_WINDOW_SHOWN);
 
   // Create SDL window
   SDL_Window *window = SDL_CreateWindow("pspsboy32",
-                                        SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                                        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                         640, 480, SDL_WINDOW_SHOWN);
   if (window == nullptr)
   {
@@ -183,16 +178,18 @@ int main(int argc, char *argv[])
   }
 
   // Create SDL debug renderer
-  SDL_Renderer *debugRenderer = SDL_CreateRenderer(debugWindow, -1, SDL_RENDERER_ACCELERATED);
-  if (debugRenderer == nullptr)
-  {
-    std::cerr << "Renderer could not be created! SDL_Error: " << SDL_GetError() << std::endl;
-    SDL_DestroyWindow(debugWindow);
-    SDL_Quit();
-    return -1;
-  }
+  // SDL_Renderer *debugRenderer = SDL_CreateRenderer(debugWindow, -1, SDL_RENDERER_ACCELERATED);
+  // if (debugRenderer == nullptr)
+  // {
+  //   std::cerr << "Renderer could not be created! SDL_Error: " << SDL_GetError() << std::endl;
+  //   SDL_DestroyWindow(debugWindow);
+  //   SDL_Quit();
+  //   return -1;
+  // }
 
-  fileReader = std::unique_ptr<DesktopFileReader>(new DesktopFileReader());
+  // Initialize SDL Renderer for ImGui
+  ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
+  ImGui_ImplSDLRenderer2_Init(renderer);
 
   // Initialize the emulator components
   core.init();
@@ -202,7 +199,11 @@ int main(int argc, char *argv[])
 
   std::cout << "Reading ROM file..." << std::endl;
 
-  core.loadRom("roms/LoZ.gb");
+  core.loadRom("roms/Kirby's Dream Land.gb");
+
+  bool show_demo_window = true;
+  bool show_another_window = false;
+  float clear_color[4] = {0.45f, 0.55f, 0.60f, 1.00f};
 
   // Main loop
   bool running = true;
@@ -215,21 +216,21 @@ int main(int argc, char *argv[])
       144  // Frame buffer height
   );
 
-  SDL_Texture *debugTexture = SDL_CreateTexture(
-      renderer,
-      SDL_PIXELFORMAT_RGB332,
-      SDL_TEXTUREACCESS_STREAMING,
-      640, // Frame buffer width
-      480  // Frame buffer height
-  );
+  // SDL_Texture *debugTexture = SDL_CreateTexture(
+  //     debugRenderer,
+  //     SDL_PIXELFORMAT_RGB332,
+  //     SDL_TEXTUREACCESS_STREAMING,
+  //     640, // Frame buffer width
+  //     480  // Frame buffer height
+  // );
 
   while (running)
   {
     // Get input from the user
     const uint8_t *keyboardState = SDL_GetKeyboardState(nullptr);
-
     while (SDL_PollEvent(&e) != 0)
     {
+      ImGui_ImplSDL2_ProcessEvent(&e);
       // User requests quit
       if (e.type == SDL_QUIT)
       {
@@ -237,45 +238,47 @@ int main(int argc, char *argv[])
       }
     }
 
-    // Update input
-    core.setButtonState(Core::Button::Right, keyboardState[SDL_SCANCODE_RIGHT]);
-    core.setButtonState(Core::Button::Left, keyboardState[SDL_SCANCODE_LEFT]);
-    core.setButtonState(Core::Button::Up, keyboardState[SDL_SCANCODE_UP]);
-    core.setButtonState(Core::Button::Down, keyboardState[SDL_SCANCODE_DOWN]);
-    core.setButtonState(Core::Button::A, keyboardState[SDL_SCANCODE_Z]);
-    core.setButtonState(Core::Button::B, keyboardState[SDL_SCANCODE_X]);
-    core.setButtonState(Core::Button::Select, keyboardState[SDL_SCANCODE_A]);
-    core.setButtonState(Core::Button::Start, keyboardState[SDL_SCANCODE_S]);
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float> elapsed = currentTime - prev_time;
+    prev_time = currentTime;
+    int cyclesToRun = static_cast<int>(elapsed.count() * CPU_FREQUENCY);
+
+    // Start ImGui frame
+    ImGui_ImplSDLRenderer2_NewFrame();
+    ImGui_ImplSDL2_NewFrame(window);
+    ImGui::NewFrame();
+
+    // Show the demo window
+    if (show_demo_window)
+    {
+      ImGui::ShowDemoWindow(&show_demo_window);
+    }
 
     // Update emulator core
-    core.update();
-
-    if (core.isFrameReady())
+    while (cyclesToRun > 0)
     {
-      if (memcmp(previousFrameBuffer, core.getFrameBuffer(), sizeof(previousFrameBuffer)) == 0)
-      {
-        // Framebuffers are the same, skip rendering
-        continue;
-      }
+      int cycles = core.update();
+      cyclesToRun -= cycles;
 
-      // Framebuffers are not the same, update previousFrameBuffer and render
-      memcpy(previousFrameBuffer, core.getFrameBuffer(), sizeof(previousFrameBuffer));
-
-      SDL_UpdateTexture(emulatorTexture, nullptr, core.getFrameBuffer(), 160 * sizeof(uint8_t));
-      SDL_RenderCopy(renderer, emulatorTexture, nullptr, nullptr);
-      SDL_RenderPresent(renderer);
-
-      // Render debug window
-      SDL_UpdateTexture(debugTexture, nullptr, core.getDebugFrameBuffer(), 640 * sizeof(uint8_t));
-      SDL_RenderClear(debugRenderer);
-      SDL_RenderCopy(debugRenderer, debugTexture, nullptr, nullptr);
-      SDL_RenderPresent(debugRenderer);
-
-      core.resetFrameReady();
-
-      // Update frame rate
-      updateFrameRate();
+      // Update input
+      core.setButtonState(Core::Button::Right, keyboardState[SDL_SCANCODE_RIGHT]);
+      core.setButtonState(Core::Button::Left, keyboardState[SDL_SCANCODE_LEFT]);
+      core.setButtonState(Core::Button::Up, keyboardState[SDL_SCANCODE_UP]);
+      core.setButtonState(Core::Button::Down, keyboardState[SDL_SCANCODE_DOWN]);
+      core.setButtonState(Core::Button::A, keyboardState[SDL_SCANCODE_Z]);
+      core.setButtonState(Core::Button::B, keyboardState[SDL_SCANCODE_X]);
+      core.setButtonState(Core::Button::Select, keyboardState[SDL_SCANCODE_A]);
+      core.setButtonState(Core::Button::Start, keyboardState[SDL_SCANCODE_S]);
     }
+
+    ImGui::Render();
+    memcpy(previousFrameBuffer, core.getFrameBuffer(), sizeof(previousFrameBuffer));
+
+    // Rendering
+    SDL_UpdateTexture(emulatorTexture, nullptr, core.getFrameBuffer(), 160 * sizeof(uint8_t));
+    SDL_RenderCopy(renderer, emulatorTexture, nullptr, nullptr);
+    ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
+    SDL_RenderPresent(renderer);
   }
 
   // Cleanup

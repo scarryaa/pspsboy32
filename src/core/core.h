@@ -7,6 +7,10 @@
 #include "./timer/timer.h"
 #include "./cartridge/cartridge.hpp"
 
+const int CPU_FREQUENCY = 4194304; // 4.194304 MHz
+const int FRAME_RATE = 60;         // 60 Hz
+const int CYCLES_PER_FRAME = CPU_FREQUENCY / FRAME_RATE;
+
 struct Core
 {
 public:
@@ -25,8 +29,11 @@ public:
     Core();
     ~Core();
 
+    int getCpuTime();
+    void setCpuTime(int time);
+    double elapsedTime();
     void init();
-    void update();
+    uint8_t update();
     void shutdown();
     uint8_t *getFrameBuffer();
     uint8_t *getDebugFrameBuffer();

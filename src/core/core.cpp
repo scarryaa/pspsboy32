@@ -14,15 +14,25 @@ void Core::init()
     reset();
 }
 
-void Core::update()
+int Core::getCpuTime()
+{
+    return cpu.getCpuTime();
+}
+
+void Core::setCpuTime(int cpuTime)
+{
+    cpu.setCpuTime(cpuTime);
+}
+
+uint8_t Core::update()
 {
     int cyclesThisUpdate = 0;
-
     // CPU executes one instruction, which could take multiple cycles
     cyclesThisUpdate += cpu.executeCycle();
 
     // Update PPU with the number of cycles that have passed
     ppu.update(cyclesThisUpdate);
+    return cyclesThisUpdate;
 }
 
 uint8_t *Core::getDebugFrameBuffer()

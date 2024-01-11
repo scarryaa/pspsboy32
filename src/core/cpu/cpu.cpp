@@ -580,6 +580,16 @@ uint8_t CPU::executeExtendedInstruction(uint8_t opcode)
     return cycles;
 }
 
+void CPU::setCpuTime(int ticks)
+{
+    time -= ticks;
+}
+
+int CPU::getCpuTime()
+{
+    return time;
+}
+
 uint8_t CPU::executeCycle()
 {
     logStatus();

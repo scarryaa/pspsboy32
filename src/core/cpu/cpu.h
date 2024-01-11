@@ -53,6 +53,9 @@ public:
     void reset();
     uint8_t executeCycle();
 
+    int getCpuTime();
+    void setCpuTime(int time);
+    int time = 0;
     void handleInterrupts();
     void setFlag();
     bool checkFlag();
