@@ -29,6 +29,7 @@ public:
     void handleInput();
     SDL_Event getEvent();
     void quit();
+    void finalRender(uint8_t *frameBuffer);
 
 private:
     void renderMenuBar();

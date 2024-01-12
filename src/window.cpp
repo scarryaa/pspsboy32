@@ -19,7 +19,7 @@ Window::Window()
         SDL_Quit();
     }
 
-    this->texture = SDL_CreateTexture(this->renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, 160, 144);
+    this->texture = SDL_CreateTexture(this->renderer, SDL_PIXELFORMAT_RGB332, SDL_TEXTUREACCESS_STREAMING, 160, 144);
     if (this->texture == nullptr)
     {
         std::cerr << "Texture could not be created! SDL_Error: " << SDL_GetError() << std::endl;
@@ -73,12 +73,19 @@ void Window::renderMemoryWindow()
 {
 }
 
+void Window::finalRender(uint8_t *frameBuffer)
+{
+    ImGui::Render();
+    SDL_UpdateTexture(this->texture, nullptr, frameBuffer, 160 * sizeof(uint8_t));
+    ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
+    SDL_RenderPresent(this->renderer);
+}
+
 void Window::render(uint8_t *frameBuffer)
 {
     ImGui_ImplSDLRenderer2_NewFrame();
     ImGui_ImplSDL2_NewFrame(this->window);
     ImGui::NewFrame();
-    ImGuiViewport *viewport = ImGui::GetMainViewport();
 
     // this->renderMenuBar();
 
@@ -91,15 +98,7 @@ void Window::render(uint8_t *frameBuffer)
     //     this->renderMemoryWindow();
     // }
 
-    ImGui::SetNextWindowPos(viewport->WorkPos);
-    ImGui::SetNextWindowSize(viewport->WorkSize);
     this->renderMainWindow();
-
-    ImGui::Render();
-
-    SDL_UpdateTexture(this->texture, NULL, frameBuffer, 160 * sizeof(uint32_t));
-    ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
-    SDL_RenderPresent(this->renderer);
 }
 
 void Window::renderMenuBar()
@@ -115,8 +114,10 @@ void Window::renderMenuBar()
                 {
                     if (ImGuiFileDialog::Instance()->IsOk())
                     {
-                        std::string filePathName = ImGuiFileDialog::Instance()->GetFilePathName();
-                        std::cout << filePathName << std::endl;
+                        std::string filePath = ImGuiFileDialog::Instance()->GetCurrentPath();
+                        filePath += "\\";
+                        filePath += ImGuiFileDialog::Instance()->GetCurrentFileName();
+                        this->loadRomCallback(filePath);
                     }
                     ImGuiFileDialog::Instance()->Close();
                 }
@@ -165,7 +166,10 @@ void Window::handleInput()
 
 void Window::renderMainWindow()
 {
+    ImGuiViewport *viewport = ImGui::GetMainViewport();
     const ImGuiWindowFlags MAIN_WINDOW_FLAGS = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoSavedSettings;
+    ImGui::SetNextWindowPos(viewport->WorkPos);
+    ImGui::SetNextWindowSize(viewport->WorkSize);
 
     if (ImGui::Begin("Main", nullptr, MAIN_WINDOW_FLAGS))
     {

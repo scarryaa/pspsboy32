@@ -27,6 +27,7 @@ void Emulator::run()
         int cyclesToRun = static_cast<int>(elapsed.count() * CPU_FREQUENCY);
 
         window.handleInput();
+        window.render(core.getFrameBuffer());
         while (cyclesToRun > 0 && gameLoaded && !paused)
         {
             int cycles = core.run();
@@ -34,17 +35,22 @@ void Emulator::run()
 
             handleInput(window.getEvent());
         }
-        window.render(core.getFrameBuffer());
+        window.finalRender(core.getFrameBuffer());
     }
 }
 
 void Emulator::loadRom(const std::string &filePath)
 {
+    core.reset();
     printf("Loading ROM: %s\n", filePath.c_str());
     if (core.loadRom(filePath))
     {
-        core.reset();
         gameLoaded = true;
+    }
+    else
+    {
+        gameLoaded = false;
+        printf("Failed to load ROM: %s\n", filePath.c_str());
     }
 }
 
